@@ -69,7 +69,7 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 bg-debug-button hover:bg-debug-button-hover text-white px-4 py-2 rounded-lg text-sm font-mono z-50"
+        className="fixed bottom-4 right-4 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-mono z-50 shadow-lg"
       >
         DEBUG
       </button>
@@ -80,13 +80,13 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-4 right-4 bg-debug-bg border border-debug-border rounded-lg p-4 w-96 max-h-96 overflow-auto z-50 font-mono text-xs"
+      className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-4 w-96 max-h-96 overflow-auto z-50 font-mono text-xs shadow-lg"
     >
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-debug-text font-bold">Debug Panel</h3>
+        <h3 className="text-foreground font-bold">Debug Panel</h3>
         <button
           onClick={() => setIsOpen(false)}
-          className="text-settings-text-muted hover:text-white"
+          className="text-muted-foreground hover:text-foreground"
         >
           ✕
         </button>
@@ -94,17 +94,17 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
 
       <div className="space-y-3">
         <div>
-          <label className="text-settings-text-muted block mb-1">Device IP:</label>
-          <div className="text-white">{deviceIp}</div>
+          <label className="text-muted-foreground block mb-1">Device IP:</label>
+          <div className="text-foreground">{deviceIp}</div>
         </div>
 
         <div>
-          <label className="text-settings-text-muted block mb-1">Command:</label>
+          <label className="text-muted-foreground block mb-1">Command:</label>
           <input
             type="text"
             value={command}
             onChange={(e) => setCommand(e.target.value)}
-            className="w-full bg-debug-response-bg border border-ui-input-border rounded px-2 py-1 text-white"
+            className="w-full bg-background border border-input rounded px-2 py-1 text-foreground"
             placeholder="GETSWS"
           />
         </div>
@@ -112,38 +112,38 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
         <button
           onClick={testCommand}
           disabled={loading}
-          className="w-full bg-debug-button hover:bg-debug-button-hover disabled:bg-ui-input-bg text-white py-2 rounded"
+          className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground py-2 rounded"
         >
           {loading ? 'Testing...' : 'Test Command'}
         </button>
 
         {result && (
-          <div className="mt-4 p-2 bg-debug-response-bg rounded overflow-auto max-h-48">
+          <div className="mt-4 p-2 bg-muted rounded overflow-auto max-h-48">
             <div className="flex justify-between items-center mb-2">
-              <div className="text-debug-response-text">Response:</div>
+              <div className="text-foreground">Response:</div>
               <button
                 onClick={copyToClipboard}
-                className="p-1 hover:bg-ui-badge-hover-bg rounded transition-colors"
+                className="p-1 hover:bg-accent rounded transition-colors"
                 title="Copy to clipboard"
               >
                 {copySuccess ? (
-                  <svg className="w-4 h-4 text-status-success-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4 text-ui-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                   </svg>
                 )}
               </button>
             </div>
-            <pre className="text-settings-label text-xs whitespace-pre-wrap">
+            <pre className="text-foreground text-xs whitespace-pre-wrap">
               {JSON.stringify(result, null, 2)}
             </pre>
           </div>
         )}
 
-        <div className="text-ui-badge-text-inactive text-xs mt-4">
+        <div className="text-muted-foreground text-xs mt-4">
           <div>Check terminal for detailed logs</div>
           <div>Try commands: GETSWS, SW 1 2</div>
         </div>

@@ -41,16 +41,9 @@ export async function POST(request: NextRequest) {
         headers: {
           'Authorization': `Basic ${auth}`,
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': '*/*',
-          'User-Agent': 'DisplayStudio/1.0',
-          'Connection': 'close', // Force connection close
         },
         body: requestBody,
         signal: controller.signal,
-        // Add cache control for Safari compatibility
-        cache: 'no-store',
-        // Ensure connection is not reused (may help with Safari)
-        keepalive: false,
       });
 
       clearTimeout(timeoutId);
