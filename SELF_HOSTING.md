@@ -381,6 +381,106 @@ Or edit `package.json`:
 }
 ```
 
+### Running on Port 80 (No Port Number Needed)
+
+**Option 1: Port Forwarding with iptables (Linux/Raspberry Pi - Recommended)**
+
+This forwards port 80 → 3000 without requiring root privileges for the Node app:
+
+```bash
+# Forward port 80 to 3000
+sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
+
+# Make it persistent across reboots
+sudo apt-get install iptables-persistent
+sudo netfilter-persistent save
+```
+
+Now access via `http://radar` or `http://192.168.1.x` (no :3000 needed!)
+
+To remove the forwarding:
+```bash
+sudo iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
+```
+
+**Option 2: Run as Root (Not Recommended)**
+
+```bash
+# Allow Node to bind to port 80 without root
+sudo setcap 'cap_net_bind_service=+ep' $(which node)
+
+# Then start on port 80
+PORT=80 npm start
+```
+
+**Warning:** Running web servers as root is a security risk. Use Option 1 instead.
+
+**Option 3: Use nginx Reverse Proxy (Advanced)**
+
+```bash
+# Install nginx
+sudo apt-get install nginx
+
+# Create config
+sudo nano /etc/nginx/sites-available/displaystudio
+```
+
+Paste:
+```nginx
+server {
+    listen 80;
+    server_name radar radar.local 192.168.1.x;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Enable and restart:
+```bash
+sudo ln -s /etc/nginx/sites-available/displaystudio /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+**Option 4: macOS - Use pfctl Port Forwarding**
+
+```bash
+# Create forwarding rule file
+sudo nano /etc/pf.anchors/displaystudio
+```
+
+Add:
+```
+rdr pass on en0 inet proto tcp from any to any port 80 -> 127.0.0.1 port 3000
+```
+
+Enable:
+```bash
+# Add anchor to pf.conf
+echo "rdr-anchor \"displaystudio\"" | sudo tee -a /etc/pf.conf
+echo "load anchor \"displaystudio\" from \"/etc/pf.anchors/displaystudio\"" | sudo tee -a /etc/pf.conf
+
+# Enable and load
+sudo pfctl -ef /etc/pf.conf
+```
+
+**Recommended Approach:**
+- **Raspberry Pi/Linux:** Use iptables forwarding (Option 1)
+- **macOS:** Use pfctl forwarding (Option 4)
+- **Windows:** Use nginx reverse proxy (Option 3)
+
+After setting up port 80, access via:
+- `http://radar` (no port needed!)
+- `http://radar.local`
+- `http://192.168.1.x`
+
 ## Firewall Configuration
 
 **macOS:**
