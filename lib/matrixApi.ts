@@ -27,35 +27,35 @@ export class MatrixApiClient {
         }),
       });
 
-      if (!response.ok) {
-        let errorMessage = `Matrix API error: ${response.statusText}`;
-        try {
-          const error = await response.json();
-          errorMessage = error.error || errorMessage;
-        } catch {
-          // Response wasn't JSON, use status text
-        }
-        throw new Error(errorMessage);
+      // Always try to parse the response
+      const data = await response.json();
+
+      // Check if the response contains an error field (API returns errors with status 200 now)
+      if (data.error) {
+        return { error: data.error, success: false };
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
-      console.error('Matrix API request failed:', error);
-      throw error;
+      // Catch network errors (fetch failed, timeout, etc.) and return silently
+      return {
+        error: error instanceof Error ? error.message : 'Network error - device unreachable',
+        success: false
+      };
     }
   }
 
   // Get current switch status
   async getStatus(): Promise<MatrixStatus> {
-    try {
-      const response = await this.sendCommand({ COMMAND: 'GETSWS' });
-      // Parse response to extract output->input mappings
-      // Response format needs to be determined from actual device
-      return this.parseStatusResponse(response);
-    } catch (error) {
-      console.error('Failed to get matrix status:', error);
-      throw error;
+    const response = await this.sendCommand({ COMMAND: 'GETSWS' });
+
+    // Check if response indicates an error - return empty status silently
+    if (response && response.error) {
+      return { outputs: [] };
     }
+
+    // Parse response to extract output->input mappings
+    return this.parseStatusResponse(response);
   }
 
   // Switch input to output(s)
@@ -64,6 +64,12 @@ export class MatrixApiClient {
     const command = `SW ${inputNum} ${outputs}`;
     console.log(`✓ Switching: Input ${inputNum} → Output(s) ${outputs}`);
     const response = await this.sendCommand({ COMMAND: command });
+
+    // Check for errors first - log but don't throw to prevent Next.js error overlay
+    if (response && response.error) {
+      // Silently return - connection monitoring will handle disconnection
+      return;
+    }
 
     // Device returns {"result":"1"} on success
     if (response && response.result === "1") {

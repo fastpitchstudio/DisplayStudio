@@ -19,7 +19,7 @@ export function OutputGroupedView({
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-1.5 shrink-0">
+      <div className="flex items-center gap-2 mb-1.5 shrink-0 [@media(max-height:768px)]:mb-1">
         <svg className="w-4 h-4 text-output-primary-light" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
         </svg>
@@ -27,7 +27,7 @@ export function OutputGroupedView({
       </div>
 
       {/* Output Buttons Grid */}
-      <div className="grid grid-cols-1 gap-3 flex-1 auto-rows-fr max-h-full" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
+      <div className="grid grid-cols-1 gap-2.5 flex-1 auto-rows-fr max-h-full [@media(max-height:768px)]:gap-1.5 [@media(max-height:600px)]:gap-1" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
         {outputLabels.map((label, index) => {
           const outputNum = index + 1;
           const currentInputNum = matrixStatus.outputs[index];
@@ -40,9 +40,9 @@ export function OutputGroupedView({
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
               {/* Vertical label on the left side (bottom to top) */}
-              <div className="flex items-center justify-center py-1 px-1 min-w-[24px] border-r border-ui-card-border">
+              <div className="flex items-center justify-center py-1 px-2 min-w-[32px] border-r border-ui-card-border bg-accent">
                 <div
-                  className="text-xs font-semibold whitespace-nowrap"
+                  className="text-xs font-semibold whitespace-nowrap text-accent-foreground"
                   style={{ writingMode: 'vertical-lr', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
                 >
                   {label}

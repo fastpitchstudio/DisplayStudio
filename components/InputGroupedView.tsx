@@ -19,7 +19,7 @@ export function InputGroupedView({
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-1.5 shrink-0">
+      <div className="flex items-center gap-2 mb-1.5 shrink-0 [@media(max-height:768px)]:mb-1">
         <svg className="w-4 h-4 text-input-primary-light" fill="currentColor" viewBox="0 0 20 20">
           <path d="M2 6a2 2 0 012-2h6a2 2 0 012 6v8a2 2 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
         </svg>
@@ -27,7 +27,7 @@ export function InputGroupedView({
       </div>
 
       {/* Input Buttons Grid */}
-      <div className="grid grid-cols-1 gap-3 flex-1 auto-rows-fr max-h-full" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
+      <div className="grid grid-cols-1 gap-2.5 flex-1 auto-rows-fr max-h-full [@media(max-height:768px)]:gap-1.5 [@media(max-height:600px)]:gap-1" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
         {inputLabels.map((label, index) => {
           const inputNum = index + 1;
           // Find all output numbers connected to this input
@@ -45,9 +45,9 @@ export function InputGroupedView({
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
               {/* Vertical label on the left side (bottom to top) */}
-              <div className="flex items-center justify-center py-1 px-1 min-w-[24px] border-r border-ui-card-border">
+              <div className="flex items-center justify-center py-1 px-2 min-w-[32px] border-r border-ui-card-border bg-accent">
                 <div
-                  className="text-xs font-semibold whitespace-nowrap"
+                  className="text-xs font-semibold whitespace-nowrap text-accent-foreground"
                   style={{ writingMode: 'vertical-lr', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
                 >
                   {label}

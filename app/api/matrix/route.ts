@@ -11,9 +11,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('\n========================================');
-    console.log('[Matrix API] Request to:', `http://${deviceIp}/cgi-bin/matrixs.cgi`);
-    console.log('[Matrix API] Command object:', JSON.stringify(command, null, 2));
+    // Reduced logging for connection attempts
+    // console.log('\n========================================');
+    // console.log('[Matrix API] Request to:', `http://${deviceIp}/cgi-bin/matrixs.cgi`);
+    // console.log('[Matrix API] Command object:', JSON.stringify(command, null, 2));
 
     const auth = Buffer.from('admin:admin').toString('base64');
 
@@ -21,8 +22,8 @@ export async function POST(request: NextRequest) {
     // The device expects: matrixdata={"COMMAND":"SW 1 2"}
     const matrixdataString = JSON.stringify(command);
     const requestBody = `matrixdata=${encodeURIComponent(matrixdataString)}`;
-    console.log('[Matrix API] Full request body:', requestBody);
-    console.log('[Matrix API] Auth header:', `Basic ${auth}`);
+    // console.log('[Matrix API] Full request body:', requestBody);
+    // console.log('[Matrix API] Auth header:', `Basic ${auth}`);
 
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
@@ -40,39 +41,49 @@ export async function POST(request: NextRequest) {
       });
       clearTimeout(timeoutId);
 
-      console.log('[Matrix API] Device response status:', response.status);
-      console.log('[Matrix API] Content-Type:', response.headers.get('content-type'));
-
       // Get response as text first to see what we got
       const responseText = await response.text();
-      console.log('[Matrix API] Raw response:', responseText);
-      console.log('========================================\n');
 
       if (!response.ok) {
-        throw new Error(`Device returned ${response.status}: ${response.statusText}`);
+        // Return error as JSON without throwing
+        return NextResponse.json(
+          { error: `Device returned ${response.status}: ${response.statusText}` },
+          { status: 200 } // Return 200 so client handles it gracefully
+        );
       }
 
       // Try to parse as JSON
       try {
         const data = JSON.parse(responseText);
-        console.log('[Matrix API] Parsed JSON:', data);
         return NextResponse.json(data);
       } catch (parseError) {
-        console.error('[Matrix API] Failed to parse response as JSON');
-        throw new Error('Device returned invalid JSON (probably HTML page). Check device IP and API endpoint.');
+        // Return error as JSON without throwing
+        return NextResponse.json(
+          { error: 'Device returned invalid JSON. Check device IP and API endpoint.' },
+          { status: 200 } // Return 200 so client handles it gracefully
+        );
       }
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
+
+      // Handle fetch errors silently
+      let errorMessage = 'Device unreachable';
       if (fetchError.name === 'AbortError') {
-        throw new Error('Device request timed out after 10 seconds');
+        errorMessage = 'Device request timed out after 10 seconds';
+      } else if (fetchError.message) {
+        errorMessage = fetchError.message;
       }
-      throw fetchError;
+
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 200 } // Return 200 so client handles it gracefully
+      );
     }
   } catch (error: any) {
-    console.error('[Matrix API] Error:', error.message);
+    // Return error as JSON without logging
     return NextResponse.json(
       { error: error.message || 'Device unreachable' },
-      { status: 500 }
+      { status: 200 } // Return 200 so client handles it gracefully
     );
   }
 }

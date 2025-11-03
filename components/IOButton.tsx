@@ -129,9 +129,9 @@ export function IOButton({
         />
       )}
       {/* Vertical label on the left side (bottom to top) */}
-      <div className="flex items-center justify-center py-1 px-1 min-w-[24px] border-r border-ui-card-border">
+      <div className="flex items-center justify-center py-1 px-2 min-w-[32px] border-r border-ui-card-border bg-accent">
         <div
-          className="text-xs font-semibold whitespace-nowrap"
+          className="text-xs font-semibold whitespace-nowrap text-accent-foreground"
           style={{ writingMode: 'vertical-lr', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
         >
           {label}

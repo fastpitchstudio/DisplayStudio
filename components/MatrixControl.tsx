@@ -21,6 +21,8 @@ interface MatrixControlProps {
   onUpdateConfig: (updates: Partial<MatrixControlProps['config']>) => void;
 }
 
+type ConnectionState = 'connected' | 'connecting' | 'disconnected' | 'retry';
+
 export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
   const [selectedInput, setSelectedInput] = useState<number | null>(null);
   const [selectedOutput, setSelectedOutput] = useState<number | null>(null);
@@ -29,14 +31,112 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
   const [matrixStatus, setMatrixStatus] = useState<MatrixStatus>({ outputs: new Array(8).fill(1) });
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [selectionTimeoutId, setSelectionTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [justConnectedSlots, setJustConnectedSlots] = useState<{ buttonNum: number; slots: number[] } | null>(null);
 
-  // Poll matrix status every 5 seconds
+  // Connection management state
+  const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
+  const [lastSuccessfulConnection, setLastSuccessfulConnection] = useState<number>(Date.now());
+  const [retryAttempt, setRetryAttempt] = useState<number>(0);
+  const [showConnectingToast, setShowConnectingToast] = useState(true); // Show on initial load
+
+  // Timeout for connecting toast - hide after 15 seconds if still showing
   useEffect(() => {
+    if (!showConnectingToast) return;
+
+    const toastTimeout = setTimeout(() => {
+      if (connectionState === 'connecting' || connectionState === 'retry') {
+        console.log('⏱ Connection attempt taking longer than expected');
+        setShowConnectingToast(false);
+      }
+    }, 15000); // 15 seconds
+
+    return () => clearTimeout(toastTimeout);
+  }, [showConnectingToast, connectionState]);
+
+  // Connection monitoring: Check if we've been disconnected for 60 seconds
+  useEffect(() => {
+    const checkConnectionTimeout = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastSuccess = now - lastSuccessfulConnection;
+
+      // If we've been disconnected for 60+ seconds, mark as disconnected
+      if (timeSinceLastSuccess > 60000 && connectionState !== 'disconnected') {
+        console.warn('⚠ Device unreachable for 60 seconds');
+        setConnectionState('disconnected');
+        setRetryAttempt(0);
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(checkConnectionTimeout);
+  }, [lastSuccessfulConnection, connectionState]);
+
+  // Auto-retry logic: When disconnected, retry every 5 minutes (3 attempts max)
+  useEffect(() => {
+    if (connectionState !== 'disconnected') return;
+
+    // Only auto-retry if we haven't exceeded 3 attempts
+    if (retryAttempt >= 3) {
+      console.log('⚠ Max auto-retry attempts reached, waiting for manual reconnection');
+      return;
+    }
+
+    const retryTimer = setTimeout(() => {
+      console.log(`🔄 Auto-retry attempt ${retryAttempt + 1}/3`);
+      setConnectionState('retry');
+      setRetryAttempt(prev => prev + 1);
+
+      // Trigger a connection attempt by temporarily enabling polling
+      attemptReconnection();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearTimeout(retryTimer);
+  }, [connectionState, retryAttempt]);
+
+  // Function to manually reconnect
+  const handleManualReconnect = useCallback(() => {
+    console.log('🔄 Manual reconnection requested');
+    setConnectionState('connecting');
+    setShowConnectingToast(true); // Show connecting toast
+    setRetryAttempt(0);
+    attemptReconnection();
+  }, []);
+
+  // Attempt to reconnect to the device
+  const attemptReconnection = useCallback(async () => {
+    const matrixClient = createMatrixClient(config.deviceIp);
+    try {
+      const status = await matrixClient.getStatus();
+      if (status.outputs.length > 0) {
+        console.log('✓ Reconnected successfully');
+        setMatrixStatus(status);
+        setConnectionState('connected');
+        setLastSuccessfulConnection(Date.now());
+        setShowConnectingToast(false); // Hide toast on success
+        setRetryAttempt(0);
+      } else {
+        // Empty outputs means connection failed
+        setShowConnectingToast(false);
+      }
+    } catch (err) {
+      // Silently handle reconnection failure
+      setShowConnectingToast(false); // Hide toast on failure
+      // Don't show error in disconnected state - just stay disconnected
+      if (connectionState !== 'disconnected') {
+        setConnectionState('disconnected');
+      }
+    }
+  }, [config.deviceIp, connectionState]);
+
+  // Poll matrix status every 5 seconds (only when connected or connecting)
+  useEffect(() => {
+    // Don't poll when disconnected
+    if (connectionState === 'disconnected') {
+      return;
+    }
+
     const matrixClient = createMatrixClient(config.deviceIp);
 
     const pollStatus = async () => {
@@ -46,10 +146,17 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         if (status.outputs.length > 0) {
           console.log('✓ Status synced:', status.outputs.join(' '));
           setMatrixStatus(status);
+          setConnectionState('connected');
+          setLastSuccessfulConnection(Date.now());
+          setShowConnectingToast(false); // Hide toast once connected
+        } else {
+          // Empty outputs means connection failed
+          setShowConnectingToast(false);
         }
-        setError(null);
       } catch (err) {
-        console.error('Failed to poll status:', err);
+        // Silently handle polling failure
+        setShowConnectingToast(false);
+        // Don't throw error - just silently fail and let connection monitoring handle it
       }
     };
 
@@ -58,7 +165,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
     // Poll every 5 seconds
     const interval = setInterval(pollStatus, 5000);
     return () => clearInterval(interval);
-  }, [config.deviceIp]);
+  }, [config.deviceIp, connectionState]);
 
   const clearSelectionTimeout = useCallback(() => {
     if (selectionTimeoutId) {
@@ -81,6 +188,12 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
 
   const handleSwitch = useCallback(
     async (inputNum: number, outputNum: number) => {
+      // If disconnected, trigger reconnection instead of attempting switch
+      if (connectionState === 'disconnected') {
+        handleManualReconnect();
+        return;
+      }
+
       setIsLoading(true);
       try {
         // Find all outputs currently mapped to this input
@@ -102,7 +215,6 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         const newStatus = { ...matrixStatus };
         newStatus.outputs[outputNum - 1] = inputNum;
         setMatrixStatus(newStatus);
-        setError(null);
 
         // Show brief success message
         setSuccessMessage(`IN${inputNum} → OUT${outputNum}`);
@@ -117,13 +229,13 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         // Start timeout to clear selection after configured seconds
         startSelectionTimeout();
       } catch (err) {
-        console.error('Switch failed:', err);
-        setError('Switch failed');
+        // Silently handle switch failure - connection monitoring will handle the state
+        // No error message needed - the reconnection button will appear if disconnected
       } finally {
         setIsLoading(false);
       }
     },
-    [config.deviceIp, matrixStatus, startSelectionTimeout]
+    [config.deviceIp, matrixStatus, startSelectionTimeout, connectionState, handleManualReconnect]
   );
 
   const handleInputSelect = (inputNum: number) => {
@@ -269,21 +381,48 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
 
   return (
     <div
-      className="h-screen w-screen flex flex-col bg-gradient-to-br from-bg-gradient-from via-bg-gradient-via to-bg-gradient-to p-2 overflow-hidden"
+      className="h-screen w-screen flex flex-col bg-gradient-to-br from-bg-gradient-from via-bg-gradient-via to-bg-gradient-to p-2 overflow-hidden text-base [@media(max-height:768px)]:text-sm [@media(max-height:768px)]:p-1.5 [@media(max-height:600px)]:text-xs"
       onClick={handleBackgroundClick}
     >
       {/* Fixed Header */}
-      <div className="flex items-center justify-end mb-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-end gap-2 mb-1 shrink-0 [@media(max-height:768px)]:mb-0.5" onClick={(e) => e.stopPropagation()}>
+        {/* Connection Status/Reconnect Button - only show when disconnected */}
+        {connectionState === 'disconnected' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleManualReconnect();
+            }}
+            className="p-2 bg-status-error-bg/20 hover:bg-status-error-bg/30 rounded-lg transition-colors"
+            aria-label="Reconnect to device"
+            title="Device disconnected - Click to reconnect"
+          >
+            <svg
+              className="w-5 h-5 text-status-error-bg"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"
+              />
+            </svg>
+          </button>
+        )}
+
         <button
           onClick={(e) => {
             e.stopPropagation();
             setShowSettings(!showSettings);
           }}
-          className="p-2 bg-ui-input-bg hover:bg-ui-badge-hover-bg rounded-lg transition-colors"
+          className="p-2 hover:bg-ui-text-secondary/10 rounded-lg transition-colors"
           aria-label="Settings"
         >
           <svg
-            className="w-5 h-5"
+            className="w-5 h-5 text-ui-text-secondary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -305,18 +444,44 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
       </div>
 
       {/* Floating status messages - positioned absolute so they don't affect layout */}
+
+      {/* Connecting Toast - Simple and friendly */}
       <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-status-error-bg backdrop-blur rounded-lg text-sm"
-          >
-            {error}
-          </motion.div>
+        {showConnectingToast && (
+          <div className="fixed top-4 left-0 right-0 z-40 flex items-center justify-center pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="px-4 py-2 bg-ui-text-secondary/20 backdrop-blur rounded-lg text-sm flex items-center gap-2 shadow-lg pointer-events-auto"
+            >
+              <svg
+                className="animate-spin h-4 w-4 text-ui-text-secondary"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <span className="text-ui-text-secondary">Connecting to device...</span>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
+
+      {/* Error toast removed - connection state is handled by reconnection button */}
+
       <AnimatePresence>
         {successMessage && (
           <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
@@ -334,7 +499,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
 
       {/* Main Content Area - View switches based on connectionView setting */}
       <div
-        className="flex-1 flex flex-row gap-4 min-h-0 max-w-6xl mx-auto w-full relative pb-2"
+        className="flex-1 flex flex-row gap-3 min-h-0 max-w-6xl mx-auto w-full relative pb-2 [@media(max-height:768px)]:gap-2 [@media(max-height:768px)]:pb-1 [@media(max-height:600px)]:gap-1.5"
         onClick={(e) => e.stopPropagation()}
       >
         {connectionView === 'input' && (
@@ -360,13 +525,13 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         {/* Inputs Section */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header with icon */}
-          <div className="flex items-center gap-2 mb-1.5 shrink-0">
+          <div className="flex items-center gap-2 mb-1.5 shrink-0 [@media(max-height:768px)]:mb-1">
             <svg className="w-4 h-4 text-input-primary-light" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
             </svg>
             <span className="text-sm font-semibold text-input-primary-light uppercase tracking-wide">Sources</span>
           </div>
-          <div className="grid grid-cols-1 gap-3 flex-1 auto-rows-fr max-h-full" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
+          <div className="grid grid-cols-1 gap-2.5 flex-1 auto-rows-fr max-h-full [@media(max-height:768px)]:gap-1.5 [@media(max-height:600px)]:gap-1" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
             {config.inputLabels.map((label, index) => {
               const inputNum = index + 1;
               // Find all output numbers connected to this input
@@ -402,13 +567,13 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         {/* Outputs Section */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header with icon */}
-          <div className="flex items-center gap-2 mb-1.5 shrink-0">
+          <div className="flex items-center gap-2 mb-1.5 shrink-0 [@media(max-height:768px)]:mb-1">
             <svg className="w-4 h-4 text-output-primary-light" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
             </svg>
             <span className="text-sm font-semibold text-output-primary-light uppercase tracking-wide">Displays</span>
           </div>
-          <div className="grid grid-cols-1 gap-3 flex-1 auto-rows-fr max-h-full" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
+          <div className="grid grid-cols-1 gap-2.5 flex-1 auto-rows-fr max-h-full [@media(max-height:768px)]:gap-1.5 [@media(max-height:600px)]:gap-1" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
             {config.outputLabels.map((label, index) => {
               const outputNum = index + 1;
               const currentInputNum = matrixStatus.outputs[index];
@@ -443,8 +608,6 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
           </>
         )}
       </div>
-
-      {/* Removed intrusive loading overlay - feedback now happens at button level */}
 
       {/* Settings Panel */}
       <SettingsPanel
