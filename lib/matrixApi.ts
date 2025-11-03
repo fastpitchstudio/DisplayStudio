@@ -8,14 +8,76 @@ export class MatrixApiClient {
   private baseUrl: string;
   private username = 'admin';
   private password = 'admin';
+  private useDirectConnection = false;
 
   constructor(deviceIp: string) {
     this.baseUrl = `http://${deviceIp}`;
+    // Try to detect if we can use direct connection (same origin or CORS allowed)
+    this.detectConnectionMode();
+  }
+
+  private async detectConnectionMode() {
+    // ALWAYS use direct connection from browser to device
+    // The Vercel proxy cannot reach local devices, so we must go direct
+    this.useDirectConnection = true;
+    console.log('✓ Using direct browser→device connection');
+    console.log('ℹ️ If this fails due to CORS, you need to either:');
+    console.log('   1. Access app via HTTP (not HTTPS) - browsers allow HTTP→HTTP local requests');
+    console.log('   2. Install a CORS browser extension');
+    console.log('   3. Use a browser flag to disable CORS for development');
+  }
+
+  private async sendDirectCommand(command: Record<string, unknown>): Promise<any> {
+    try {
+      const auth = btoa(`${this.username}:${this.password}`);
+      const matrixdataString = JSON.stringify(command);
+      const requestBody = `matrixdata=${encodeURIComponent(matrixdataString)}`;
+
+      const response = await fetch(`${this.baseUrl}/cgi-bin/matrixs.cgi`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: requestBody,
+        mode: 'cors', // Try CORS mode
+      });
+
+      if (!response.ok) {
+        return {
+          error: `Device returned ${response.status}: ${response.statusText}`,
+          success: false
+        };
+      }
+
+      const responseText = await response.text();
+
+      try {
+        return JSON.parse(responseText);
+      } catch {
+        return {
+          error: 'Device returned invalid JSON',
+          success: false
+        };
+      }
+    } catch (error) {
+      // If CORS fails, return error suggesting proxy needed
+      return {
+        error: error instanceof Error ? error.message : 'Direct connection failed - CORS may be blocking',
+        success: false,
+        corsBlocked: true
+      };
+    }
   }
 
   private async sendCommand(command: Record<string, unknown>): Promise<any> {
+    // If on localhost, try direct connection to device
+    if (this.useDirectConnection) {
+      return this.sendDirectCommand(command);
+    }
+
+    // Otherwise use API proxy (will fail in production for local devices)
     try {
-      // Use Next.js API route proxy to avoid CORS issues
       const response = await fetch('/api/matrix', {
         method: 'POST',
         headers: {
