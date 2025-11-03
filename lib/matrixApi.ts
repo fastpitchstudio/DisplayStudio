@@ -25,9 +25,10 @@ export class MatrixApiClient {
       const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
       const isLocalIP = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
       const isLocalDomain = hostname.endsWith('.local'); // e.g., raspberrypi.local
+      const isBareHostname = !hostname.includes('.') && hostname !== 'localhost'; // e.g., radar, myserver
 
       // Use API proxy for self-hosted servers, direct connection for cloud (Vercel)
-      const isSelfHosted = isLocalhost || isLocalIP || isLocalDomain;
+      const isSelfHosted = isLocalhost || isLocalIP || isLocalDomain || isBareHostname;
       this.useDirectConnection = !isSelfHosted;
 
       if (isSelfHosted) {
