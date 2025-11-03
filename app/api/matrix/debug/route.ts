@@ -18,98 +18,62 @@ export async function POST(request: NextRequest) {
 
     const auth = Buffer.from('admin:admin').toString('base64');
     const url = `http://${deviceIp}/cgi-bin/matrixs.cgi`;
-
-    // Use CORRECT format: application/x-www-form-urlencoded (same as main endpoint)
-    const matrixdataString = JSON.stringify(command);
-    const requestBody = `matrixdata=${encodeURIComponent(matrixdataString)}`;
+    const requestBody = JSON.stringify({ matrixdata: command });
 
     console.log('\nFull URL:', url);
     console.log('Auth header:', `Basic ${auth}`);
     console.log('Request body:', requestBody);
-    console.log('Content-Type: application/x-www-form-urlencoded');
 
     console.log('\nSending request...');
     const startTime = Date.now();
 
-    // Add timeout to match main endpoint
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: requestBody,
+    });
 
+    const endTime = Date.now();
+    const responseText = await response.text();
+
+    console.log('\n---------- RESPONSE ----------');
+    console.log('Status:', response.status, response.statusText);
+    console.log('Time:', `${endTime - startTime}ms`);
+    console.log('Content-Type:', response.headers.get('content-type'));
+    console.log('Response body:', responseText);
+    console.log('========== END DEBUG ==========\n');
+
+    let parsedResponse;
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: requestBody,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-      const endTime = Date.now();
-      const responseText = await response.text();
-
-      console.log('\n---------- RESPONSE ----------');
-      console.log('Status:', response.status, response.statusText);
-      console.log('Time:', `${endTime - startTime}ms`);
-      console.log('Content-Type:', response.headers.get('content-type'));
-      console.log('Response body:', responseText);
-      console.log('========== END DEBUG ==========\n');
-
-      let parsedResponse;
-      try {
-        parsedResponse = JSON.parse(responseText);
-      } catch {
-        parsedResponse = { raw: responseText };
-      }
-
-      return NextResponse.json({
-        success: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        contentType: response.headers.get('content-type'),
-        responseTime: `${endTime - startTime}ms`,
-        body: parsedResponse,
-        rawBody: responseText,
-        requestDetails: {
-          url,
-          method: 'POST',
-          contentType: 'application/x-www-form-urlencoded',
-          bodyFormat: requestBody,
-        }
-      });
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-
-      console.log('\n---------- FETCH ERROR ----------');
-      console.log('Error name:', fetchError.name);
-      console.log('Error message:', fetchError.message);
-      console.log('Error cause:', fetchError.cause);
-      console.log('========== END ERROR ==========\n');
-
-      let errorDetails = {
-        success: false,
-        error: fetchError.message,
-        errorType: fetchError.name,
-        errorCause: fetchError.cause?.toString(),
-        isTimeout: fetchError.name === 'AbortError',
-      };
-
-      return NextResponse.json(errorDetails);
+      parsedResponse = JSON.parse(responseText);
+    } catch {
+      parsedResponse = { raw: responseText };
     }
-  } catch (error: any) {
-    console.error('\n========== OUTER ERROR ==========');
-    console.error('Error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('========== END ERROR ==========\n');
 
     return NextResponse.json({
-      success: false,
-      error: error.message || 'Unknown error',
-      errorType: error.name,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      success: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      responseTime: `${endTime - startTime}ms`,
+      body: parsedResponse,
+      rawBody: responseText,
     });
+  } catch (error: any) {
+    console.error('\n========== ERROR ==========');
+    console.error(error);
+    console.error('========== END ERROR ==========\n');
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message,
+        stack: error.stack
+      },
+      { status: 500 }
+    );
   }
 }
