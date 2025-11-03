@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { IOButton } from './IOButton';
 import { SettingsPanel } from './SettingsPanel';
 import { DebugPanel } from './DebugPanel';
+import { InputGroupedView } from './InputGroupedView';
+import { OutputGroupedView } from './OutputGroupedView';
 import { createMatrixClient, MatrixStatus } from '@/lib/matrixApi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,6 +14,9 @@ interface MatrixControlProps {
     deviceIp: string;
     inputLabels: string[];
     outputLabels: string[];
+    connectionView?: string;
+    themeMode?: string;
+    themeName?: string;
   };
   onUpdateConfig: (updates: Partial<MatrixControlProps['config']>) => void;
 }
@@ -233,9 +238,38 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
     clearSelectionTimeout();
   };
 
+  // Handler for Input Grouped View - toggle output on/off for an input
+  const handleToggleOutput = useCallback(
+    async (inputNum: number, outputNum: number) => {
+      // Check if this output is already connected to this input
+      const isConnected = matrixStatus.outputs[outputNum - 1] === inputNum;
+
+      if (isConnected) {
+        // Disconnect: route this output to input 1 (or keep it disconnected)
+        // For now, we'll route to input 1 as a default
+        await handleSwitch(1, outputNum);
+      } else {
+        // Connect: route this input to this output
+        await handleSwitch(inputNum, outputNum);
+      }
+    },
+    [matrixStatus, handleSwitch]
+  );
+
+  // Handler for Output Grouped View - select which input feeds this output
+  const handleSelectInputForOutput = useCallback(
+    async (inputNum: number, outputNum: number) => {
+      // Simply route the selected input to this output
+      await handleSwitch(inputNum, outputNum);
+    },
+    [handleSwitch]
+  );
+
+  const connectionView = config.connectionView || 'both';
+
   return (
     <div
-      className="h-screen w-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-2 overflow-hidden"
+      className="h-screen w-screen flex flex-col bg-gradient-to-br from-bg-gradient-from via-bg-gradient-via to-bg-gradient-to p-2 overflow-hidden"
       onClick={handleBackgroundClick}
     >
       {/* Fixed Header */}
@@ -245,7 +279,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
             e.stopPropagation();
             setShowSettings(!showSettings);
           }}
-          className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+          className="p-2 bg-ui-input-bg hover:bg-ui-badge-hover-bg rounded-lg transition-colors"
           aria-label="Settings"
         >
           <svg
@@ -277,7 +311,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-red-900/90 backdrop-blur rounded-lg text-sm"
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-status-error-bg backdrop-blur rounded-lg text-sm"
           >
             {error}
           </motion.div>
@@ -290,7 +324,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
               initial={{ opacity: 0, y: -20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              className="px-4 py-2 bg-green-900/90 backdrop-blur rounded-lg text-sm font-mono pointer-events-auto"
+              className="px-4 py-2 bg-status-success-bg backdrop-blur rounded-lg text-sm font-mono pointer-events-auto"
             >
               ✓ {successMessage}
             </motion.div>
@@ -298,21 +332,41 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         )}
       </AnimatePresence>
 
-      {/* Main Content Area - Two columns side by side with max width */}
+      {/* Main Content Area - View switches based on connectionView setting */}
       <div
         className="flex-1 flex flex-row gap-4 min-h-0 max-w-6xl mx-auto w-full relative pb-2"
         onClick={(e) => e.stopPropagation()}
       >
+        {connectionView === 'input' && (
+          <InputGroupedView
+            inputLabels={config.inputLabels}
+            outputLabels={config.outputLabels}
+            matrixStatus={matrixStatus}
+            onToggleOutput={handleToggleOutput}
+          />
+        )}
+
+        {connectionView === 'output' && (
+          <OutputGroupedView
+            inputLabels={config.inputLabels}
+            outputLabels={config.outputLabels}
+            matrixStatus={matrixStatus}
+            onSelectInput={handleSelectInputForOutput}
+          />
+        )}
+
+        {connectionView === 'both' && (
+          <>
         {/* Inputs Section */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header with icon */}
           <div className="flex items-center gap-2 mb-1.5 shrink-0">
-            <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 text-input-primary-light" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
             </svg>
-            <span className="text-sm font-semibold text-blue-400 uppercase tracking-wide">Sources</span>
+            <span className="text-sm font-semibold text-input-primary-light uppercase tracking-wide">Sources</span>
           </div>
-          <div className="grid grid-cols-1 gap-2 flex-1 auto-rows-fr">
+          <div className="grid grid-cols-1 gap-3 flex-1 auto-rows-fr max-h-full" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
             {config.inputLabels.map((label, index) => {
               const inputNum = index + 1;
               // Find all output numbers connected to this input
@@ -349,12 +403,12 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header with icon */}
           <div className="flex items-center gap-2 mb-1.5 shrink-0">
-            <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 text-output-primary-light" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-semibold text-green-400 uppercase tracking-wide">Displays</span>
+            <span className="text-sm font-semibold text-output-primary-light uppercase tracking-wide">Displays</span>
           </div>
-          <div className="grid grid-cols-1 gap-2 flex-1 auto-rows-fr">
+          <div className="grid grid-cols-1 gap-3 flex-1 auto-rows-fr max-h-full" style={{ gridAutoRows: 'minmax(0, 80px)' }}>
             {config.outputLabels.map((label, index) => {
               const outputNum = index + 1;
               const currentInputNum = matrixStatus.outputs[index];
@@ -386,6 +440,8 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
             })}
           </div>
         </div>
+          </>
+        )}
       </div>
 
       {/* Removed intrusive loading overlay - feedback now happens at button level */}

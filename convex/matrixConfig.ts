@@ -36,6 +36,7 @@ export const initialize = mutation({
       output7Label: 'Output 7',
       output8Label: 'Output 8',
       selectionTimeoutSeconds: 5,
+      connectionView: 'both',
       updatedAt: Date.now(),
     });
   },
@@ -88,5 +89,41 @@ export const updateSelectionTimeout = mutation({
       throw new Error('Configuration not initialized');
     }
     await ctx.db.patch(config._id, { selectionTimeoutSeconds: seconds, updatedAt: Date.now() });
+  },
+});
+
+// Update connection view
+export const updateConnectionView = mutation({
+  args: { view: v.string() },
+  handler: async (ctx, { view }) => {
+    const config = await ctx.db.query('matrixConfig').first();
+    if (!config) {
+      throw new Error('Configuration not initialized');
+    }
+    await ctx.db.patch(config._id, { connectionView: view, updatedAt: Date.now() });
+  },
+});
+
+// Update theme mode (light/dark/system)
+export const updateThemeMode = mutation({
+  args: { mode: v.string() },
+  handler: async (ctx, { mode }) => {
+    const config = await ctx.db.query('matrixConfig').first();
+    if (!config) {
+      throw new Error('Configuration not initialized');
+    }
+    await ctx.db.patch(config._id, { themeMode: mode, updatedAt: Date.now() });
+  },
+});
+
+// Update theme name (vercel/tangerine/claymorphism/midnight-bloom/fastpitch)
+export const updateThemeName = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, { name }) => {
+    const config = await ctx.db.query('matrixConfig').first();
+    if (!config) {
+      throw new Error('Configuration not initialized');
+    }
+    await ctx.db.patch(config._id, { themeName: name, updatedAt: Date.now() });
   },
 });

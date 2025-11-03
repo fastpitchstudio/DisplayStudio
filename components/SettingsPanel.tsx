@@ -11,6 +11,9 @@ interface SettingsPanelProps {
     inputLabels: string[];
     outputLabels: string[];
     selectionTimeoutSeconds?: number;
+    connectionView?: string;
+    themeMode?: string;
+    themeName?: string;
   };
   onUpdateConfig: (updates: Partial<SettingsPanelProps['config']>) => void;
   showDebug: boolean;
@@ -22,6 +25,9 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
   const [inputLabels, setInputLabels] = useState(config.inputLabels);
   const [outputLabels, setOutputLabels] = useState(config.outputLabels);
   const [selectionTimeout, setSelectionTimeout] = useState(config.selectionTimeoutSeconds || 5);
+  const [connectionView, setConnectionView] = useState(config.connectionView || 'both');
+  const [themeMode, setThemeMode] = useState(config.themeMode || 'system');
+  const [themeName, setThemeName] = useState(config.themeName || 'vercel');
 
   const handleSave = () => {
     onUpdateConfig({
@@ -29,6 +35,9 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
       inputLabels,
       outputLabels,
       selectionTimeoutSeconds: selectionTimeout,
+      connectionView,
+      themeMode,
+      themeName,
     });
     onClose();
   };
@@ -64,7 +73,7 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-gray-800 shadow-2xl z-50 overflow-y-auto"
+            className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-background shadow-2xl z-50 overflow-y-auto"
           >
             <div className="p-4 sm:p-6">
               {/* Header */}
@@ -74,13 +83,13 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSave}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors"
+                    className="px-4 py-2 bg-settings-button-primary hover:bg-settings-button-primary-hover rounded-lg font-semibold transition-colors"
                   >
                     Save
                   </motion.button>
                   <button
                     onClick={onClose}
-                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    className="p-2 hover:bg-muted rounded-lg transition-colors"
                     aria-label="Close settings"
                   >
                     <svg
@@ -102,30 +111,93 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
 
               {/* Device IP */}
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2 text-gray-300">
+                <label className="block text-sm font-medium mb-2 text-settings-label">
                   Device IP Address
                 </label>
                 <input
                   type="text"
                   value={deviceIp}
                   onChange={(e) => setDeviceIp(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none"
                   placeholder="192.168.1.222"
                 />
               </div>
 
+              {/* Connection View */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2 text-settings-label">
+                  Connection View
+                </label>
+                <select
+                  value={connectionView}
+                  onChange={(e) => setConnectionView(e.target.value)}
+                  className="w-full px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none text-foreground"
+                >
+                  <option value="both">Sources and Displays</option>
+                  <option value="input">Sources</option>
+                  <option value="output">Displays</option>
+                </select>
+                <p className="text-xs text-settings-text-muted mt-2">
+                  <strong>Sources and Displays:</strong> Show both side-by-side with drag-and-drop<br />
+                  <strong>Sources:</strong> Show only sources with display toggles<br />
+                  <strong>Displays:</strong> Show only displays with source selection
+                </p>
+              </div>
+
+              {/* Theme Name */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2 text-settings-label">
+                  Theme
+                </label>
+                <select
+                  value={themeName}
+                  onChange={(e) => setThemeName(e.target.value)}
+                  className="w-full px-3 py-2 bg-card rounded-lg border border-border focus:border-primary focus:outline-none text-foreground"
+                >
+                  <option value="vercel">Vercel</option>
+                  <option value="tangerine">Tangerine</option>
+                  <option value="claymorphism">Claymorphism</option>
+                  <option value="midnight-bloom">Midnight Bloom</option>
+                  <option value="fastpitch">Fastpitch Studio</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Choose a color theme for the interface
+                </p>
+              </div>
+
+              {/* Theme Mode */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2 text-settings-label">
+                  Mode
+                </label>
+                <select
+                  value={themeMode}
+                  onChange={(e) => setThemeMode(e.target.value)}
+                  className="w-full px-3 py-2 bg-card rounded-lg border border-border focus:border-primary focus:outline-none text-foreground"
+                >
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  <strong>System:</strong> Follow system preference<br />
+                  <strong>Light:</strong> Always use light mode<br />
+                  <strong>Dark:</strong> Always use dark mode
+                </p>
+              </div>
+
               {/* Input Labels */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-300">Input Labels</h3>
+                <h3 className="text-lg font-semibold mb-3 text-settings-label">Input Labels</h3>
                 <div className="space-y-2">
                   {inputLabels.map((label, index) => (
                     <div key={`input-label-${index}`} className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400 w-16">IN {index + 1}</span>
+                      <span className="text-sm text-settings-text-muted w-16">IN {index + 1}</span>
                       <input
                         type="text"
                         value={label}
                         onChange={(e) => updateInputLabel(index, e.target.value)}
-                        className="flex-1 px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
+                        className="flex-1 px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none text-sm"
                       />
                     </div>
                   ))}
@@ -134,16 +206,16 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
 
               {/* Output Labels */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-300">Output Labels</h3>
+                <h3 className="text-lg font-semibold mb-3 text-settings-label">Output Labels</h3>
                 <div className="space-y-2">
                   {outputLabels.map((label, index) => (
                     <div key={`output-label-${index}`} className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400 w-16">OUT {index + 1}</span>
+                      <span className="text-sm text-settings-text-muted w-16">OUT {index + 1}</span>
                       <input
                         type="text"
                         value={label}
                         onChange={(e) => updateOutputLabel(index, e.target.value)}
-                        className="flex-1 px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+                        className="flex-1 px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-output-primary-light focus:outline-none text-sm"
                       />
                     </div>
                   ))}
@@ -152,10 +224,10 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
 
               {/* Selection Timeout */}
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2 text-gray-300">
+                <label className="block text-sm font-medium mb-2 text-settings-label">
                   Selection Timeout (seconds)
                 </label>
-                <p className="text-xs text-gray-400 mb-2">
+                <p className="text-xs text-settings-text-muted mb-2">
                   Keep selection active after routing to enable multiple connections
                 </p>
                 <input
@@ -164,14 +236,14 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
                   max="60"
                   value={selectionTimeout}
                   onChange={(e) => setSelectionTimeout(parseInt(e.target.value) || 5)}
-                  className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none"
                 />
               </div>
 
               {/* Debug Toggle */}
               <div className="mb-6">
                 <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm font-medium text-gray-300">Show Debug Panel</span>
+                  <span className="text-sm font-medium text-settings-label">Show Debug Panel</span>
                   <div className="relative">
                     <input
                       type="checkbox"
@@ -181,7 +253,7 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
                     />
                     <div
                       className={`w-11 h-6 rounded-full transition-colors ${
-                        showDebug ? 'bg-blue-600' : 'bg-gray-600'
+                        showDebug ? 'bg-settings-button-primary' : 'bg-ui-input-border'
                       }`}
                     >
                       <div

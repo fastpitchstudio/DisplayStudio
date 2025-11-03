@@ -4,6 +4,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { MatrixControl } from '@/components/MatrixControl';
 import { useEffect } from 'react';
+import { useTheme } from '@/lib/useTheme';
 
 export default function Home() {
   const config = useQuery(api.matrixConfig.get);
@@ -11,6 +12,12 @@ export default function Home() {
   const updateDeviceIp = useMutation(api.matrixConfig.updateDeviceIp);
   const updateInputLabel = useMutation(api.matrixConfig.updateInputLabel);
   const updateOutputLabel = useMutation(api.matrixConfig.updateOutputLabel);
+  const updateSelectionTimeout = useMutation(api.matrixConfig.updateSelectionTimeout);
+  const updateConnectionView = useMutation(api.matrixConfig.updateConnectionView);
+  const updateThemeMode = useMutation(api.matrixConfig.updateThemeMode);
+  const updateThemeName = useMutation(api.matrixConfig.updateThemeName);
+
+  const { setMode, setThemeName } = useTheme(config?.themeMode, config?.themeName);
 
   // Initialize config on first load
   useEffect(() => {
@@ -26,10 +33,10 @@ export default function Home() {
 
   if (!config) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gray-900">
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-foreground mx-auto mb-4"></div>
+          <p className="text-settings-text-muted">Loading...</p>
         </div>
       </div>
     );
@@ -39,6 +46,10 @@ export default function Home() {
     deviceIp?: string;
     inputLabels?: string[];
     outputLabels?: string[];
+    selectionTimeoutSeconds?: number;
+    connectionView?: string;
+    themeMode?: string;
+    themeName?: string;
   }) => {
     try {
       // Update device IP if changed
@@ -64,6 +75,28 @@ export default function Home() {
             await updateOutputLabel({ outputNum: i + 1, label: updates.outputLabels[i] });
           }
         }
+      }
+
+      // Update selection timeout if changed
+      if (updates.selectionTimeoutSeconds !== undefined && updates.selectionTimeoutSeconds !== config.selectionTimeoutSeconds) {
+        await updateSelectionTimeout({ seconds: updates.selectionTimeoutSeconds });
+      }
+
+      // Update connection view if changed
+      if (updates.connectionView && updates.connectionView !== config.connectionView) {
+        await updateConnectionView({ view: updates.connectionView });
+      }
+
+      // Update theme mode if changed
+      if (updates.themeMode && updates.themeMode !== config.themeMode) {
+        await updateThemeMode({ mode: updates.themeMode });
+        setMode(updates.themeMode as 'light' | 'dark' | 'system');
+      }
+
+      // Update theme name if changed
+      if (updates.themeName && updates.themeName !== config.themeName) {
+        await updateThemeName({ name: updates.themeName });
+        setThemeName(updates.themeName as 'vercel' | 'tangerine' | 'claymorphism' | 'midnight-bloom' | 'fastpitch');
       }
     } catch (error) {
       console.error('Failed to update config:', error);
@@ -98,6 +131,9 @@ export default function Home() {
         deviceIp: config.deviceIp,
         inputLabels,
         outputLabels,
+        connectionView: config.connectionView,
+        themeMode: config.themeMode,
+        themeName: config.themeName,
       }}
       onUpdateConfig={handleUpdateConfig}
     />

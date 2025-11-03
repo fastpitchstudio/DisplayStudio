@@ -39,7 +39,7 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-mono z-50"
+        className="fixed bottom-4 right-4 bg-debug-button hover:bg-debug-button-hover text-white px-4 py-2 rounded-lg text-sm font-mono z-50"
       >
         DEBUG
       </button>
@@ -50,13 +50,13 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-4 right-4 bg-gray-900 border border-purple-500 rounded-lg p-4 w-96 max-h-96 overflow-auto z-50 font-mono text-xs"
+      className="fixed bottom-4 right-4 bg-debug-bg border border-debug-border rounded-lg p-4 w-96 max-h-96 overflow-auto z-50 font-mono text-xs"
     >
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-purple-400 font-bold">Debug Panel</h3>
+        <h3 className="text-debug-text font-bold">Debug Panel</h3>
         <button
           onClick={() => setIsOpen(false)}
-          className="text-gray-400 hover:text-white"
+          className="text-settings-text-muted hover:text-white"
         >
           ✕
         </button>
@@ -64,17 +64,17 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
 
       <div className="space-y-3">
         <div>
-          <label className="text-gray-400 block mb-1">Device IP:</label>
+          <label className="text-settings-text-muted block mb-1">Device IP:</label>
           <div className="text-white">{deviceIp}</div>
         </div>
 
         <div>
-          <label className="text-gray-400 block mb-1">Command:</label>
+          <label className="text-settings-text-muted block mb-1">Command:</label>
           <input
             type="text"
             value={command}
             onChange={(e) => setCommand(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white"
+            className="w-full bg-debug-response-bg border border-ui-input-border rounded px-2 py-1 text-white"
             placeholder="GETSWS"
           />
         </div>
@@ -82,21 +82,21 @@ export function DebugPanel({ deviceIp }: DebugPanelProps) {
         <button
           onClick={testCommand}
           disabled={loading}
-          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white py-2 rounded"
+          className="w-full bg-debug-button hover:bg-debug-button-hover disabled:bg-ui-input-bg text-white py-2 rounded"
         >
           {loading ? 'Testing...' : 'Test Command'}
         </button>
 
         {result && (
-          <div className="mt-4 p-2 bg-gray-800 rounded overflow-auto max-h-48">
-            <div className="text-green-400 mb-2">Response:</div>
-            <pre className="text-gray-300 text-xs whitespace-pre-wrap">
+          <div className="mt-4 p-2 bg-debug-response-bg rounded overflow-auto max-h-48">
+            <div className="text-debug-response-text mb-2">Response:</div>
+            <pre className="text-settings-label text-xs whitespace-pre-wrap">
               {JSON.stringify(result, null, 2)}
             </pre>
           </div>
         )}
 
-        <div className="text-gray-500 text-xs mt-4">
+        <div className="text-ui-badge-text-inactive text-xs mt-4">
           <div>Check terminal for detailed logs</div>
           <div>Try commands: GETSWS, SW 1 2</div>
         </div>

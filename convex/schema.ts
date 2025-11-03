@@ -27,7 +27,19 @@ export default defineSchema({
     output8Label: v.string(),
 
     // Selection timeout in seconds (default 5)
-    selectionTimeoutSeconds: v.number(),
+    selectionTimeoutSeconds: v.optional(v.number()),
+
+    // Connection view mode: "both" (default), "input", "output"
+    connectionView: v.optional(v.string()),
+
+    // DEPRECATED: Old theme field (kept for backward compatibility)
+    theme: v.optional(v.string()),
+
+    // Theme mode: "light", "dark", "system" (default "system")
+    themeMode: v.optional(v.string()),
+
+    // Theme name: "vercel", "tangerine", "claymorphism", "midnight-bloom", "fastpitch" (default "vercel")
+    themeName: v.optional(v.string()),
 
     // Metadata
     updatedAt: v.number(),

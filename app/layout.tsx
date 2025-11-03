@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ConvexClientProvider } from './ConvexClientProvider';
+import { themeScript } from '@/lib/theme-script';
 
 export const metadata: Metadata = {
   title: 'Matrix Switch Control',
@@ -14,7 +15,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>

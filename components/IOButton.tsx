@@ -27,7 +27,7 @@ export function IOButton({
   label,
   type,
   isSelected,
-  isActive,
+  isActive: _isActive,
   isHighlighted,
   onSelect,
   onDragStart,
@@ -68,27 +68,27 @@ export function IOButton({
 
   const bgColor = isSelected
     ? type === 'input'
-      ? 'bg-blue-500/30'
-      : 'bg-green-500/30'
+      ? 'bg-input-bg-selected'
+      : 'bg-output-bg-selected'
     : isHighlighted
     ? type === 'input'
-      ? 'bg-blue-500/20'
-      : 'bg-green-500/20'
-    : 'bg-gray-800/50';
+      ? 'bg-input-bg-highlighted'
+      : 'bg-output-bg-highlighted'
+    : 'bg-ui-card-bg';
 
   const borderColor = isDraggingOver
-    ? 'border-yellow-400 border-2'
+    ? 'border-accent-drag-over border-2'
     : isSelected
     ? type === 'input'
-      ? 'border-blue-400 border-2'
-      : 'border-green-400 border-2'
+      ? 'border-input-border-selected border-2'
+      : 'border-output-border-selected border-2'
     : isHighlighted
     ? type === 'input'
-      ? 'border-blue-400/70 border-2'
-      : 'border-green-400/70 border-2'
+      ? 'border-input-border-highlighted border-2'
+      : 'border-output-border-highlighted border-2'
     : hasConnection
-    ? 'border-gray-600'
-    : 'border-gray-700/50';
+    ? 'border-ui-input-border'
+    : 'border-ui-card-border';
 
   return (
     <div
@@ -102,7 +102,7 @@ export function IOButton({
     >
       <motion.div
         onClick={onSelect}
-        className={`${bgColor} ${borderColor} backdrop-blur-sm border rounded-lg transition-all touch-manipulation select-none flex flex-row cursor-pointer relative overflow-hidden h-full`}
+        className={`${bgColor} ${borderColor} backdrop-blur-sm border rounded-lg shadow-sm transition-all touch-manipulation select-none flex flex-row cursor-pointer relative overflow-hidden h-full`}
         whileTap={{ scale: 0.97 }}
         whileHover={{ scale: 1.01 }}
         animate={{
@@ -114,7 +114,7 @@ export function IOButton({
       {isSelected && (
         <motion.div
           className={`absolute inset-0 rounded-lg pointer-events-none ${
-            type === 'input' ? 'border-[3px] border-blue-400' : 'border-[3px] border-green-400'
+            type === 'input' ? 'border-[3px] border-input-primary-light' : 'border-[3px] border-output-primary-light'
           }`}
           initial={{ scale: 1, opacity: 1 }}
           animate={{
@@ -129,7 +129,7 @@ export function IOButton({
         />
       )}
       {/* Vertical label on the left side (bottom to top) */}
-      <div className="flex items-center justify-center py-1 px-1 min-w-[24px] border-r border-gray-700/50">
+      <div className="flex items-center justify-center py-1 px-1 min-w-[24px] border-r border-ui-card-border">
         <div
           className="text-xs font-semibold whitespace-nowrap"
           style={{ writingMode: 'vertical-lr', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
@@ -157,13 +157,14 @@ export function IOButton({
             return (
               <motion.div
                 key={slotNum}
-                className={`px-1 py-1 rounded text-[10px] font-bold text-center transition-all truncate flex items-center justify-center ${
+                className={`px-1 py-1 rounded-md font-bold text-center transition-all truncate flex items-center justify-center ${
                   isActive
                     ? type === 'input'
-                      ? 'bg-green-500/40 border border-green-400/70 text-green-100'
-                      : 'bg-blue-500/40 border border-blue-400/70 text-blue-100'
-                    : 'bg-gray-700/30 border border-gray-600/40 text-gray-600'
+                      ? 'bg-output-bg-active border border-output-border-highlighted text-output-text-active'
+                      : 'bg-input-bg-active border border-input-border-highlighted text-input-text-active'
+                    : 'bg-ui-badge-bg-inactive border border-ui-badge-border-inactive text-ui-badge-text-inactive'
                 }`}
+                style={{ fontSize: '14px' }}
                 title={slotLabel || `${slotNum}`}
                 animate={wasJustConnected ? {
                   scale: [1, 1.2, 1],
@@ -197,13 +198,14 @@ export function IOButton({
             return (
               <motion.div
                 key={slotNum}
-                className={`px-1 py-1 rounded text-[10px] font-bold text-center transition-all truncate flex items-center justify-center ${
+                className={`px-1 py-1 rounded-md font-bold text-center transition-all truncate flex items-center justify-center ${
                   isActive
                     ? type === 'input'
-                      ? 'bg-green-500/40 border border-green-400/70 text-green-100'
-                      : 'bg-blue-500/40 border border-blue-400/70 text-blue-100'
-                    : 'bg-gray-700/30 border border-gray-600/40 text-gray-600'
+                      ? 'bg-output-bg-active border border-output-border-highlighted text-output-text-active'
+                      : 'bg-input-bg-active border border-input-border-highlighted text-input-text-active'
+                    : 'bg-ui-badge-bg-inactive border border-ui-badge-border-inactive text-ui-badge-text-inactive'
                 }`}
+                style={{ fontSize: '14px' }}
                 title={slotLabel || `${slotNum}`}
                 animate={wasJustConnected ? {
                   scale: [1, 1.2, 1],
