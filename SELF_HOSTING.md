@@ -383,10 +383,20 @@ Or edit `package.json`:
 
 ### Running on Port 80 (No Port Number Needed)
 
-**Option 1: Port Forwarding with iptables (Linux/Raspberry Pi - Recommended)**
+**Option 1: Port Forwarding with iptables/nftables (Linux/Raspberry Pi - Recommended)**
 
-This forwards port 80 → 3000 without requiring root privileges for the Node app:
+This forwards port 80 → 3000 without requiring root privileges for the Node app.
 
+**First, check which firewall you have:**
+```bash
+# Check for iptables
+which iptables
+
+# Check for nftables
+which nft
+```
+
+**If you have iptables:**
 ```bash
 # Forward port 80 to 3000
 sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
@@ -396,11 +406,44 @@ sudo apt-get install iptables-persistent
 sudo netfilter-persistent save
 ```
 
+**If you have nftables (newer Raspberry Pi OS):**
+```bash
+# Create the forwarding rule
+sudo nft add table ip nat
+sudo nft add chain ip nat prerouting { type nat hook prerouting priority -100 \; }
+sudo nft add rule ip nat prerouting tcp dport 80 redirect to :3000
+
+# Make it persistent - save current rules
+sudo nft list ruleset | sudo tee /etc/nftables.conf
+
+# Enable nftables service to load on boot
+sudo systemctl enable nftables
+```
+
+**If neither exists, install iptables:**
+```bash
+sudo apt-get update
+sudo apt-get install iptables
+# Then use iptables commands above
+```
+
 Now access via `http://radar` or `http://192.168.1.x` (no :3000 needed!)
 
-To remove the forwarding:
+**To remove the forwarding:**
+
+iptables:
 ```bash
 sudo iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
+```
+
+nftables:
+```bash
+# List rules with handles
+sudo nft -a list table ip nat
+# Delete the redirect rule (replace X with the handle number shown)
+sudo nft delete rule ip nat prerouting handle X
+# Save changes
+sudo nft list ruleset | sudo tee /etc/nftables.conf
 ```
 
 **Option 2: Run as Root (Not Recommended)**
