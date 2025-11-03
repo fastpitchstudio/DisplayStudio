@@ -94,6 +94,11 @@
 }
 
 @layer components {
+  /* Touch drag-over visual feedback */
+  [data-drag-over="true"] > div {
+    @apply border-yellow-400 !border-[3px] shadow-lg shadow-yellow-400/50;
+  }
+
   /* Source/Input colors - use primary with opacity for selections */
   .bg-input-bg-selected { @apply bg-primary/10; }
   .bg-input-bg-highlighted { @apply bg-primary/5; }

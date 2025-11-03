@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 interface IOButtonProps {
   number: number;
@@ -41,6 +41,10 @@ export function IOButton({
   justConnectedSlots = [],
 }: IOButtonProps) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const touchMoved = useRef(false);
+  const dragThreshold = 10; // pixels to move before considering it a drag
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'link';
@@ -70,6 +74,109 @@ export function IOButton({
     e.preventDefault();
     setIsDraggingOver(false);
     onDrop?.();
+  };
+
+  // Touch event handlers for iOS/iPad support
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    touchMoved.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos.current) return;
+
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+
+    // If moved more than threshold, consider it a drag
+    if (deltaX > dragThreshold || deltaY > dragThreshold) {
+      touchMoved.current = true;
+
+      // Prevent scrolling during drag
+      e.preventDefault();
+
+      // Start drag if not already dragging
+      if (!isTouchDragging) {
+        setIsTouchDragging(true);
+        onDragStart?.();
+      }
+
+      // Check if we're over another button
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (element) {
+        const dropTarget = element.closest('[data-io-button]');
+        if (dropTarget && dropTarget !== e.currentTarget) {
+          // We're over a valid drop target
+          const targetType = dropTarget.getAttribute('data-io-type');
+          const targetNumber = dropTarget.getAttribute('data-io-number');
+
+          // Only allow dropping on opposite type
+          if (targetType !== type) {
+            setIsDraggingOver(false);
+            // Trigger visual feedback on the target
+            dropTarget.setAttribute('data-drag-over', 'true');
+          }
+        } else {
+          // Clear any existing drag-over states
+          document.querySelectorAll('[data-drag-over="true"]').forEach(el => {
+            el.removeAttribute('data-drag-over');
+          });
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchMoved.current && isTouchDragging) {
+      // This was a drag, not a tap
+      const touch = e.changedTouches[0];
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+      if (element) {
+        const dropTarget = element.closest('[data-io-button]');
+        if (dropTarget && dropTarget !== e.currentTarget) {
+          const targetType = dropTarget.getAttribute('data-io-type');
+
+          // Only allow dropping on opposite type
+          if (targetType !== type) {
+            // Trigger drop on the target element
+            const event = new Event('drop-touch', { bubbles: true });
+            dropTarget.dispatchEvent(event);
+            onDrop?.();
+          }
+        }
+      }
+
+      onDragEnd?.();
+      setIsTouchDragging(false);
+
+      // Clean up drag-over states
+      document.querySelectorAll('[data-drag-over="true"]').forEach(el => {
+        el.removeAttribute('data-drag-over');
+      });
+    } else if (!touchMoved.current) {
+      // This was a tap, not a drag
+      onSelect();
+    }
+
+    touchStartPos.current = null;
+    touchMoved.current = false;
+  };
+
+  const handleTouchCancel = () => {
+    if (isTouchDragging) {
+      onDragEnd?.();
+      setIsTouchDragging(false);
+    }
+    touchStartPos.current = null;
+    touchMoved.current = false;
+
+    // Clean up drag-over states
+    document.querySelectorAll('[data-drag-over="true"]').forEach(el => {
+      el.removeAttribute('data-drag-over');
+    });
   };
 
   const hasConnection = type === 'output' ? !!currentInputLabel : (connectedOutputs && connectedOutputs.length > 0);
@@ -106,12 +213,20 @@ export function IOButton({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
+      data-io-button
+      data-io-type={type}
+      data-io-number={number}
       className="h-full"
     >
       <motion.div
-        onClick={onSelect}
-        className={`${bgColor} ${borderColor} backdrop-blur-sm border rounded-lg shadow-sm transition-all touch-manipulation select-none flex flex-row cursor-pointer relative overflow-hidden h-full`}
-        whileTap={{ scale: 0.97 }}
+        className={`${bgColor} ${borderColor} backdrop-blur-sm border rounded-lg shadow-sm transition-all touch-manipulation select-none flex flex-row cursor-pointer relative overflow-hidden h-full ${
+          isTouchDragging ? 'opacity-50' : ''
+        }`}
+        whileTap={touchMoved.current ? {} : { scale: 0.97 }}
         whileHover={{ scale: 1.01 }}
         animate={{
           scale: isSelected ? 1.02 : 1,
