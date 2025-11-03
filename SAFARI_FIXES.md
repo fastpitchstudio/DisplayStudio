@@ -1,9 +1,17 @@
 # Safari Compatibility Fixes
 
-## Issue: "fetch failed" in Safari (macOS and iOS)
+## Issue: Request Timeout in Safari (macOS and iOS)
 
-### Root Cause
-Safari's fetch implementation in Vercel's serverless environment is stricter than Chrome. The error "fetch failed" occurs when Safari's fetch doesn't receive all required headers or has connection issues.
+### Root Cause Analysis
+
+**Problem:** Debug panel shows `{"isTimeout": true, "errorType": "AbortError"}` after exactly 10 seconds in Safari, while Chrome completes requests in ~100-200ms.
+
+**Key Finding:** Safari has a **hardcoded 10-second timeout** for network requests that differs from Chrome (300s) and Firefox (90s). This cannot be overridden by the browser.
+
+**Why It's Timing Out:**
+The Vercel serverless function is hitting our AbortController's 10-second timeout. This suggests that when Safari makes the request, something in the request chain is causing the Vercel function's fetch to the local device to hang or take too long to even start.
+
+**Critical Difference:** Chrome and Safari send slightly different request headers/properties that may cause Vercel's Node.js fetch implementation to behave differently.
 
 ### Applied Fixes
 
@@ -29,20 +37,28 @@ headers: {
 - `app/api/matrix/route.ts` - Main proxy endpoint
 - `app/api/matrix/debug/route.ts` - Debug endpoint
 
-### Testing Required
-After deploying these changes to Vercel:
+### Next Diagnostic Steps
 
-1. **Test in Safari (macOS)**
-   - Open https://your-app.vercel.app
-   - Try routing an input to output
-   - Use debug panel to test GETSWS command
-   - Copy error output if it still fails
+After deploying, use the debug panel to check Vercel logs:
 
-2. **Test in Safari (iOS/iPadOS)**
-   - Ensure device is on same network as matrix switch
-   - Check: Settings → Privacy → Local Network → Safari → ON
-   - Open app and test routing
-   - Use debug panel if issues persist
+1. **Open Debug Panel in Safari** and run GETSWS command
+2. **Check Vercel Function Logs** (Vercel Dashboard → your project → Functions tab)
+   - Look for the debug request
+   - Check which headers Safari sent vs Chrome
+   - See if fetch to local device even starts
+   - Check timing: does it hang immediately or after attempting connection?
+
+3. **Compare Request Headers:**
+   - In Vercel logs, you'll see "All headers:" JSON output
+   - Compare Safari's headers vs Chrome's headers
+   - Look for differences in: User-Agent, Accept, Connection, etc.
+
+### Important Notes
+
+- **Local Network Permission:** This only applies to NATIVE iOS/macOS apps, NOT web browsers like Safari
+- **Safari has no "Local Network" setting:** This is a common misconception - browsers don't need this permission
+- **The issue is server-side:** The timeout happens in Vercel's serverless function, not in Safari itself
+- Safari makes the request → Vercel receives it → Vercel tries to fetch local device → times out at 10s
 
 ## Theme Issue in Safari
 

@@ -8,7 +8,13 @@ export async function POST(request: NextRequest) {
     console.log('\n========== DEBUG REQUEST ==========');
     console.log('Device IP:', deviceIp);
     console.log('Command:', JSON.stringify(command, null, 2));
+    console.log('\nClient Request Headers:');
     console.log('User-Agent:', request.headers.get('user-agent'));
+    console.log('Accept:', request.headers.get('accept'));
+    console.log('Content-Type:', request.headers.get('content-type'));
+    console.log('Origin:', request.headers.get('origin'));
+    console.log('Referer:', request.headers.get('referer'));
+    console.log('All headers:', JSON.stringify(Object.fromEntries(request.headers.entries()), null, 2));
 
     const auth = Buffer.from('admin:admin').toString('base64');
     const url = `http://${deviceIp}/cgi-bin/matrixs.cgi`;
@@ -37,6 +43,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': '*/*',
           'User-Agent': 'DisplayStudio/1.0',
+          'Connection': 'close', // Force connection close
         },
         body: requestBody,
         signal: controller.signal,

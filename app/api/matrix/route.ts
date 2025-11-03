@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': '*/*',
           'User-Agent': 'DisplayStudio/1.0',
+          'Connection': 'close', // Force connection close (may help with Safari)
         },
         body: requestBody,
         signal: controller.signal,
