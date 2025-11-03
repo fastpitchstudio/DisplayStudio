@@ -17,14 +17,19 @@ export class MatrixApiClient {
   }
 
   private async detectConnectionMode() {
-    // ALWAYS use direct connection from browser to device
-    // The Vercel proxy cannot reach local devices, so we must go direct
-    this.useDirectConnection = true;
-    console.log('✓ Using direct browser→device connection');
-    console.log('ℹ️ If this fails due to CORS, you need to either:');
-    console.log('   1. Access app via HTTP (not HTTPS) - browsers allow HTTP→HTTP local requests');
-    console.log('   2. Install a CORS browser extension');
-    console.log('   3. Use a browser flag to disable CORS for development');
+    // On localhost, use API proxy (works fine)
+    // On Vercel, must use direct connection (proxy can't reach local device)
+    if (typeof window !== 'undefined') {
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      this.useDirectConnection = !isLocalhost;
+
+      if (isLocalhost) {
+        console.log('✓ Using API proxy (localhost mode)');
+      } else {
+        console.log('✓ Using direct browser→device connection (production mode)');
+        console.log('ℹ️ If blocked by CORS, use Chrome with --disable-web-security flag');
+      }
+    }
   }
 
   private async sendDirectCommand(command: Record<string, unknown>): Promise<any> {
@@ -40,7 +45,6 @@ export class MatrixApiClient {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: requestBody,
-        mode: 'cors', // Try CORS mode
       });
 
       if (!response.ok) {
@@ -51,32 +55,26 @@ export class MatrixApiClient {
       }
 
       const responseText = await response.text();
-
       try {
         return JSON.parse(responseText);
       } catch {
-        return {
-          error: 'Device returned invalid JSON',
-          success: false
-        };
+        return { error: 'Device returned invalid JSON', success: false };
       }
     } catch (error) {
-      // If CORS fails, return error suggesting proxy needed
       return {
         error: error instanceof Error ? error.message : 'Direct connection failed - CORS may be blocking',
-        success: false,
-        corsBlocked: true
+        success: false
       };
     }
   }
 
   private async sendCommand(command: Record<string, unknown>): Promise<any> {
-    // If on localhost, try direct connection to device
+    // On production (Vercel), use direct browser→device connection
     if (this.useDirectConnection) {
       return this.sendDirectCommand(command);
     }
 
-    // Otherwise use API proxy (will fail in production for local devices)
+    // On localhost, use API proxy (works perfectly)
     try {
       const response = await fetch('/api/matrix', {
         method: 'POST',
