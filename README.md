@@ -63,10 +63,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 Set these in your Vercel project settings (Settings → Environment Variables):
 
 ```bash
-CONVEX_DEPLOYMENT=prod:your-deployment-name  # e.g., prod:descriptive-beagle-218
-CONVEX_DEPLOY_KEY=your-deploy-key            # Get from Convex dashboard
+# Required for Convex deployment during build
+CONVEX_DEPLOY_KEY=prod:your-deployment-name|your-key-value
+
+# Required for the app to connect to Convex at runtime
 NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
 ```
+
+**Note:** Only `CONVEX_DEPLOY_KEY` and `NEXT_PUBLIC_CONVEX_URL` are needed. The `CONVEX_DEPLOYMENT` is read from `convex.json`.
 
 ### Getting Convex Deploy Key
 
@@ -79,9 +83,18 @@ NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
 ### Build Configuration
 
 The build process automatically:
-1. Deploys Convex schema and functions (`npx convex deploy`)
+1. Deploys Convex schema and functions to production (`npx convex deploy --prod`)
 2. Generates TypeScript types in `convex/_generated/`
-3. Builds the Next.js application
+3. Builds the Next.js application (`npm run build:next`)
+
+The deployment info is read from `convex.json`:
+```json
+{
+  "project": "displaystudio",
+  "team": "fastpitchstudio",
+  "prodUrl": "https://descriptive-beagle-218.convex.cloud"
+}
+```
 
 No additional configuration needed - just push to your connected GitHub repo!
 
