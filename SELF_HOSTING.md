@@ -21,11 +21,21 @@ cd /Users/dalena/Projects/DisplayStudio
 # Install dependencies (if not already done)
 npm install
 
+# Ensure .env.local exists with Convex credentials
+# (should already exist from development)
+cat .env.local
+
 # Build for production
 npm run build
 
 # Start the server
 npm start
+```
+
+**Note:** If `.env.local` doesn't exist, create it with:
+```bash
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+CONVEX_DEPLOY_KEY=prod:your-deployment-name|your-key-value
 ```
 
 The app runs on **http://localhost:3000** and is accessible from any device on your network at **http://YOUR-MAC-IP:3000**
@@ -111,11 +121,20 @@ cd C:\path\to\DisplayStudio
 # Install dependencies (if not already done)
 npm install
 
+# Ensure .env.local exists with Convex credentials
+type .env.local
+
 # Build for production
 npm run build
 
 # Start the server
 npm start
+```
+
+**Note:** If `.env.local` doesn't exist, create it with:
+```
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+CONVEX_DEPLOY_KEY=prod:your-deployment-name|your-key-value
 ```
 
 Access at **http://localhost:3000** or **http://YOUR-PC-IP:3000**
@@ -197,12 +216,34 @@ cd DisplayStudio
 # Install dependencies
 npm install
 
-# Build
+# Set up Convex environment variables
+nano .env.local
+```
+
+Add these lines to `.env.local` (get values from your Convex dashboard):
+```bash
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+CONVEX_DEPLOY_KEY=prod:your-deployment-name|your-key-value
+```
+
+Save and exit (Ctrl+X, Y, Enter), then continue:
+
+```bash
+# IMPORTANT: Build the production version
 npm run build
 
-# Test run
+# Test run (verify it works before setting up service)
 npm start
 ```
+
+**Important Notes:**
+- The `npm run build` step is REQUIRED before `npm start`
+- You MUST set up `.env.local` with Convex credentials before building
+- Get your Convex URL from: https://dashboard.convex.dev → Your Project → Settings
+- Get your Deploy Key from: https://dashboard.convex.dev → Your Project → Settings → Deploy Keys
+- The build process may take 2-5 minutes on Raspberry Pi
+- If you get "Could not find production build" error, run `npm run build` again
+- Once you see "✓ Ready" after running `npm start`, test accessing the app
 
 Access at **http://raspberrypi.local:3000** or **http://RASPBERRY-PI-IP:3000**
 
@@ -213,7 +254,7 @@ Create systemd service:
 sudo nano /etc/systemd/system/displaystudio.service
 ```
 
-Paste:
+Paste (replace `/home/pi/DisplayStudio` with your actual path):
 ```ini
 [Unit]
 Description=DisplayStudio Matrix Control
@@ -226,10 +267,14 @@ WorkingDirectory=/home/pi/DisplayStudio
 ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=10
+Environment="NODE_ENV=production"
+EnvironmentFile=/home/pi/DisplayStudio/.env.local
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+**Important:** The `EnvironmentFile` line tells systemd to load your `.env.local` file with Convex credentials.
 
 Enable and start:
 ```bash
