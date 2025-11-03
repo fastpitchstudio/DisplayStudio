@@ -338,6 +338,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
                   onDragEnd={() => {
                     setSelectedInput(null);
                   }}
+                  onDrop={() => handleDrop('input', inputNum)}
                 />
               );
             })}
