@@ -17,16 +17,25 @@ export class MatrixApiClient {
   }
 
   private async detectConnectionMode() {
-    // On localhost, use API proxy (works fine)
-    // On Vercel, must use direct connection (proxy can't reach local device)
+    // Determine if we should use API proxy or direct browser→device connection
     if (typeof window !== 'undefined') {
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      this.useDirectConnection = !isLocalhost;
+      const hostname = window.location.hostname;
 
-      if (isLocalhost) {
-        console.log('✓ Using API proxy (localhost mode)');
+      // Check if this is a self-hosted server (local network or localhost)
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+      const isLocalIP = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
+      const isLocalDomain = hostname.endsWith('.local'); // e.g., raspberrypi.local
+
+      // Use API proxy for self-hosted servers, direct connection for cloud (Vercel)
+      const isSelfHosted = isLocalhost || isLocalIP || isLocalDomain;
+      this.useDirectConnection = !isSelfHosted;
+
+      if (isSelfHosted) {
+        console.log('✓ Using API proxy (self-hosted mode)');
+        console.log(`  Server: ${hostname}`);
       } else {
-        console.log('✓ Using direct browser→device connection (production mode)');
+        console.log('✓ Using direct browser→device connection (cloud mode)');
+        console.log(`  Hostname: ${hostname}`);
         console.log('ℹ️ If blocked by CORS, use Chrome with --disable-web-security flag');
       }
     }
