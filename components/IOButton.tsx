@@ -91,22 +91,25 @@ export function IOButton({
     : 'border-gray-700/50';
 
   return (
-    <motion.div
+    <div
       draggable
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={onSelect}
-      className={`${bgColor} ${borderColor} backdrop-blur-sm border rounded-lg transition-all touch-manipulation select-none flex flex-row cursor-pointer relative overflow-hidden h-full`}
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ scale: 1.01 }}
-      animate={{
-        scale: isSelected ? 1.02 : 1,
-      }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      className="h-full"
     >
+      <motion.div
+        onClick={onSelect}
+        className={`${bgColor} ${borderColor} backdrop-blur-sm border rounded-lg transition-all touch-manipulation select-none flex flex-row cursor-pointer relative overflow-hidden h-full`}
+        whileTap={{ scale: 0.97 }}
+        whileHover={{ scale: 1.01 }}
+        animate={{
+          scale: isSelected ? 1.02 : 1,
+        }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      >
       {/* Pulse ring effect when selected */}
       {isSelected && (
         <motion.div
@@ -217,6 +220,7 @@ export function IOButton({
           })}
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

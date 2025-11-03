@@ -30,10 +30,10 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
   const [selectionTimeoutId, setSelectionTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [justConnectedSlots, setJustConnectedSlots] = useState<{ buttonNum: number; slots: number[] } | null>(null);
 
-  const matrixClient = createMatrixClient(config.deviceIp);
-
   // Poll matrix status every 5 seconds
   useEffect(() => {
+    const matrixClient = createMatrixClient(config.deviceIp);
+
     const pollStatus = async () => {
       try {
         const status = await matrixClient.getStatus();
@@ -90,6 +90,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
 
         console.log(`Routing Input ${inputNum} to outputs: ${allOutputs.join(', ')}`);
 
+        const matrixClient = createMatrixClient(config.deviceIp);
         await matrixClient.switchInputToOutputs(inputNum, allOutputs);
 
         // Optimistic update
@@ -117,7 +118,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         setIsLoading(false);
       }
     },
-    [matrixClient, matrixStatus, startSelectionTimeout]
+    [config.deviceIp, matrixStatus, startSelectionTimeout]
   );
 
   const handleInputSelect = (inputNum: number) => {
