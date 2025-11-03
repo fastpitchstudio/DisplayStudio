@@ -439,6 +439,29 @@ All options handle the DisplayStudio app easily:
 4. Set up auto-start if desired
 5. Enjoy CORS-free operation in all browsers!
 
+## Managing the Server
+
+**Stop/Restart/Kill processes:** See [SERVER_MANAGEMENT.md](SERVER_MANAGEMENT.md) for complete guide including:
+- How to kill `npm start` processes
+- Managing systemd services
+- Switching between dev and production
+- Troubleshooting port conflicts
+
+**Quick commands:**
+```bash
+# Stop server running in terminal
+Ctrl+C
+
+# Kill by port
+lsof -ti:3000 | xargs kill
+
+# Restart systemd service
+sudo systemctl restart displaystudio
+
+# View service logs
+sudo journalctl -u displaystudio -f
+```
+
 ## Need Help?
 
 - Check server logs for errors

@@ -54,13 +54,27 @@ Access at http://localhost:3000 or http://YOUR-PC-IP:3000
 
 See [SELF_HOSTING.md](SELF_HOSTING.md) for Raspberry Pi guide.
 
+## Stopping/Restarting the Server
+
+**Stop server running in terminal:**
+```bash
+# Press Ctrl+C
+```
+
+**Kill server by port (if Ctrl+C doesn't work):**
+```bash
+lsof -ti:3000 | xargs kill
+```
+
+**For more details:** See [SERVER_MANAGEMENT.md](SERVER_MANAGEMENT.md)
+
 ## Troubleshooting
 
 **"Command not found" error:**
 - Make script executable: `chmod +x start-server.sh`
 
 **"Port 3000 in use":**
-- Stop dev server first: kill the `npm run dev` process
+- Kill existing process: `lsof -ti:3000 | xargs kill`
 - Or use different port: `PORT=3001 npm start`
 
 **Can't access from other devices:**
@@ -70,6 +84,7 @@ See [SELF_HOSTING.md](SELF_HOSTING.md) for Raspberry Pi guide.
 
 **Build fails:**
 - Ensure Node.js 18+ installed: `node --version`
+- Ensure .env.local exists with Convex credentials
 - Clear cache: `rm -rf .next node_modules && npm install`
 
 ## Need More Control?
