@@ -1,6 +1,10 @@
 # Matrix Switch Control
 
-A beautiful, responsive web application to control your 8x8 video matrix switch. Features dual interaction modes (tap or drag), real-time status updates, and persistent configuration via Convex.
+A beautiful, responsive web application to control your 8x8 video matrix switch. Features bidirectional multi-routing, real-time status updates, and persistent configuration via Convex.
+
+[![GitHub](https://img.shields.io/badge/GitHub-DisplayStudio-blue?logo=github)](https://github.com/YOUR_USERNAME/DisplayStudio)
+
+> **Note:** Replace `YOUR_USERNAME` in the badge above with your actual GitHub username.
 
 ## Features
 
@@ -51,6 +55,35 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Deployment to Vercel
+
+### Required Environment Variables
+
+Set these in your Vercel project settings (Settings → Environment Variables):
+
+```bash
+CONVEX_DEPLOYMENT=prod:your-deployment-name  # e.g., prod:descriptive-beagle-218
+CONVEX_DEPLOY_KEY=your-deploy-key            # Get from Convex dashboard
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+```
+
+### Getting Convex Deploy Key
+
+1. Go to your Convex dashboard: https://dashboard.convex.dev
+2. Select your project
+3. Go to Settings → Deploy Keys
+4. Create a new deploy key for production
+5. Copy the key and add it to Vercel as `CONVEX_DEPLOY_KEY`
+
+### Build Configuration
+
+The build process automatically:
+1. Deploys Convex schema and functions (`npx convex deploy`)
+2. Generates TypeScript types in `convex/_generated/`
+3. Builds the Next.js application
+
+No additional configuration needed - just push to your connected GitHub repo!
 
 ## Usage
 
