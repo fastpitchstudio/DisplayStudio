@@ -118,6 +118,7 @@ export function IOButton({
 
       // Start drag if not already dragging
       if (!isTouchDragging) {
+        console.log(`Touch drag started: ${type} ${number}`);
         setIsTouchDragging(true);
         onDragStart?.();
       }
@@ -149,17 +150,26 @@ export function IOButton({
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchMoved.current && isTouchDragging) {
-      // This was a drag, not a tap
+      // This was a drag, not a tap - prevent click event from firing
+      e.preventDefault();
+
       const touch = e.changedTouches[0];
       const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+      console.log(`Touch drag ended: ${type} ${number} at position`, touch.clientX, touch.clientY);
 
       if (element) {
         const dropTarget = element.closest('[data-io-button]');
         if (dropTarget && dropTarget !== e.currentTarget) {
           const targetType = dropTarget.getAttribute('data-io-type');
+          const targetNumber = dropTarget.getAttribute('data-io-number');
+
+          console.log(`Drop target found: ${targetType} ${targetNumber}`);
 
           // Only allow dropping on opposite type
           if (targetType !== type) {
+            console.log(`Valid drop: ${type} ${number} → ${targetType} ${targetNumber}`);
+
             // Find the React component instance and call its drop handler
             // We need to trigger a synthetic drop event that the target can handle
             const targetElement = dropTarget as HTMLElement;
@@ -171,7 +181,11 @@ export function IOButton({
             });
 
             targetElement.dispatchEvent(dropEvent);
+          } else {
+            console.log(`Invalid drop: same type (${type} ${number} → ${targetType} ${targetNumber})`);
           }
+        } else {
+          console.log('Drop target not found or dropped on self');
         }
       }
 
@@ -182,10 +196,9 @@ export function IOButton({
       document.querySelectorAll('[data-drag-over="true"]').forEach(el => {
         el.removeAttribute('data-drag-over');
       });
-    } else if (!touchMoved.current) {
-      // This was a tap, not a drag
-      onSelect();
     }
+    // For taps (!touchMoved.current), let the onClick handler deal with it
+    // Don't call onSelect here to avoid double-firing on desktop
 
     touchStartPos.current = null;
     touchMoved.current = false;
@@ -250,6 +263,7 @@ export function IOButton({
       className="h-full"
     >
       <motion.div
+        onClick={onSelect}
         className={`${bgColor} ${borderColor} backdrop-blur-sm border rounded-lg shadow-sm transition-all touch-manipulation select-none flex flex-row cursor-pointer relative overflow-hidden h-full ${
           isTouchDragging ? 'opacity-50' : ''
         }`}
