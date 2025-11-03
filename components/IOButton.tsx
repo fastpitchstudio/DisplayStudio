@@ -54,8 +54,16 @@ export function IOButton({
     setIsDraggingOver(true);
   };
 
-  const handleDragLeave = () => {
-    setIsDraggingOver(false);
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only set isDraggingOver to false if we're actually leaving the button,
+    // not just entering a child element
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+      setIsDraggingOver(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -77,7 +85,7 @@ export function IOButton({
     : 'bg-ui-card-bg';
 
   const borderColor = isDraggingOver
-    ? 'border-accent-drag-over border-2'
+    ? 'border-yellow-400 border-[3px] shadow-lg shadow-yellow-400/50'
     : isSelected
     ? type === 'input'
       ? 'border-input-border-selected border-2'
