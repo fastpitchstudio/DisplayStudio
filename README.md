@@ -18,11 +18,39 @@ A beautiful, responsive web application to control your 8x8 video matrix switch.
 - **Fixed Badge Grid**: Each button displays an 8-slot badge grid (2 rows × 4 columns) showing connection status at a glance
 - **Direct Device Control**: Communicates directly with matrix switch over HTTP with cumulative routing support
 
-## Important: Browser Setup Required
+## Deployment Options
 
-**This app connects directly from your browser to a local network device (HTTP). Since the app is hosted on Vercel (HTTPS), you need to disable CORS in your browser.**
+### Option 1: Self-Host (Recommended - No CORS Issues!)
 
-### Quick Start - Chrome with CORS Disabled:
+Self-hosting avoids all browser CORS issues and works in Safari, Chrome, Firefox, and mobile browsers.
+
+**Easiest method (macOS/Linux):**
+```bash
+./start-server.sh
+```
+
+**Windows:**
+```
+start-server.bat
+```
+
+**What it does:**
+- Installs dependencies automatically
+- Builds the app
+- Starts server on http://localhost:3000
+- Shows your network IP for access from other devices
+
+See **[SELF_HOSTING.md](SELF_HOSTING.md)** for complete guide including:
+- macOS auto-start on login
+- Windows service setup
+- Raspberry Pi 24/7 deployment
+- Docker deployment
+
+### Option 2: Use Vercel (Requires CORS Workaround)
+
+**This app connects directly from your browser to a local network device (HTTP). Since Vercel serves over HTTPS, you need to disable CORS in your browser.**
+
+**Quick Start - Chrome with CORS Disabled:**
 
 **Mac:**
 ```bash
