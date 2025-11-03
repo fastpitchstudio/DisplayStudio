@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface IOButtonProps {
   number: number;
@@ -45,6 +45,25 @@ export function IOButton({
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const touchMoved = useRef(false);
   const dragThreshold = 10; // pixels to move before considering it a drag
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  // Listen for touch-drop events on this button
+  useEffect(() => {
+    const handleTouchDrop = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.log('Touch drop received:', customEvent.detail, 'on', type, number);
+      // This button received a touch drop, call its drop handler
+      onDrop?.();
+    };
+
+    const element = buttonRef.current;
+    if (element) {
+      element.addEventListener('touch-drop', handleTouchDrop);
+      return () => {
+        element.removeEventListener('touch-drop', handleTouchDrop);
+      };
+    }
+  }, [onDrop, type, number]);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'link';
@@ -141,10 +160,17 @@ export function IOButton({
 
           // Only allow dropping on opposite type
           if (targetType !== type) {
-            // Trigger drop on the target element
-            const event = new Event('drop-touch', { bubbles: true });
-            dropTarget.dispatchEvent(event);
-            onDrop?.();
+            // Find the React component instance and call its drop handler
+            // We need to trigger a synthetic drop event that the target can handle
+            const targetElement = dropTarget as HTMLElement;
+
+            // Create a custom event with detail about the drop
+            const dropEvent = new CustomEvent('touch-drop', {
+              bubbles: true,
+              detail: { sourceType: type, sourceNumber: number }
+            });
+
+            targetElement.dispatchEvent(dropEvent);
           }
         }
       }
@@ -207,6 +233,7 @@ export function IOButton({
 
   return (
     <div
+      ref={buttonRef}
       draggable
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
@@ -246,6 +273,23 @@ export function IOButton({
           }}
           transition={{
             duration: 1.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      )}
+      {/* Drag indicator when touch dragging */}
+      {isTouchDragging && (
+        <motion.div
+          className={`absolute inset-0 rounded-lg pointer-events-none border-[3px] ${
+            type === 'input' ? 'border-input-primary-light' : 'border-output-primary-light'
+          }`}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0.5, 1, 0.5],
+          }}
+          transition={{
+            duration: 0.8,
             repeat: Infinity,
             ease: 'easeInOut',
           }}
