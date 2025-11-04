@@ -127,3 +127,17 @@ export const updateThemeName = mutation({
     await ctx.db.patch(config._id, { themeName: name, updatedAt: Date.now() });
   },
 });
+
+// Update proxy tunnel URL
+export const updateProxyTunnelUrl = mutation({
+  args: { url: v.string() },
+  handler: async (ctx, { url }) => {
+    const config = await ctx.db.query('matrixConfig').first();
+    if (!config) {
+      throw new Error('Configuration not initialized');
+    }
+    // Trim whitespace and remove trailing slashes
+    const cleanUrl = url.trim().replace(/\/+$/, '');
+    await ctx.db.patch(config._id, { proxyTunnelUrl: cleanUrl || undefined, updatedAt: Date.now() });
+  },
+});

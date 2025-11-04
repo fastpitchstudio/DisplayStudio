@@ -16,6 +16,7 @@ export default function Home() {
   const updateConnectionView = useMutation(api.matrixConfig.updateConnectionView);
   const updateThemeMode = useMutation(api.matrixConfig.updateThemeMode);
   const updateThemeName = useMutation(api.matrixConfig.updateThemeName);
+  const updateProxyTunnelUrl = useMutation(api.matrixConfig.updateProxyTunnelUrl);
 
   const { setMode, setThemeName } = useTheme(config?.themeMode, config?.themeName);
 
@@ -44,6 +45,7 @@ export default function Home() {
 
   const handleUpdateConfig = async (updates: {
     deviceIp?: string;
+    proxyTunnelUrl?: string;
     inputLabels?: string[];
     outputLabels?: string[];
     selectionTimeoutSeconds?: number;
@@ -55,6 +57,11 @@ export default function Home() {
       // Update device IP if changed
       if (updates.deviceIp && updates.deviceIp !== config.deviceIp) {
         await updateDeviceIp({ ip: updates.deviceIp });
+      }
+
+      // Update proxy tunnel URL if changed
+      if (updates.proxyTunnelUrl !== undefined && updates.proxyTunnelUrl !== config.proxyTunnelUrl) {
+        await updateProxyTunnelUrl({ url: updates.proxyTunnelUrl });
       }
 
       // Update input labels if changed
@@ -129,6 +136,7 @@ export default function Home() {
     <MatrixControl
       config={{
         deviceIp: config.deviceIp,
+        proxyTunnelUrl: config.proxyTunnelUrl,
         inputLabels,
         outputLabels,
         connectionView: config.connectionView,

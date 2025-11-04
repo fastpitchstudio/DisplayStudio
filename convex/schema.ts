@@ -41,6 +41,11 @@ export default defineSchema({
     // Theme name: "vercel", "tangerine", "claymorphism", "midnight-bloom", "fastpitch" (default "vercel")
     themeName: v.optional(v.string()),
 
+    // Proxy tunnel URL (for remote access via Cloudflare Tunnel)
+    // When set, this URL is used instead of the local deviceIp
+    // Format: "https://your-tunnel.example.com"
+    proxyTunnelUrl: v.optional(v.string()),
+
     // Metadata
     updatedAt: v.number(),
   }),

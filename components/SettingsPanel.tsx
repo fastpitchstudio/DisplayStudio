@@ -8,6 +8,7 @@ interface SettingsPanelProps {
   onClose: () => void;
   config: {
     deviceIp: string;
+    proxyTunnelUrl?: string;
     inputLabels: string[];
     outputLabels: string[];
     selectionTimeoutSeconds?: number;
@@ -22,6 +23,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDebug, onToggleDebug }: SettingsPanelProps) {
   const [deviceIp, setDeviceIp] = useState(config.deviceIp);
+  const [proxyTunnelUrl, setProxyTunnelUrl] = useState(config.proxyTunnelUrl || '');
   const [inputLabels, setInputLabels] = useState(config.inputLabels);
   const [outputLabels, setOutputLabels] = useState(config.outputLabels);
   const [selectionTimeout, setSelectionTimeout] = useState(config.selectionTimeoutSeconds || 5);
@@ -32,6 +34,7 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
   const handleSave = () => {
     onUpdateConfig({
       deviceIp,
+      proxyTunnelUrl,
       inputLabels,
       outputLabels,
       selectionTimeoutSeconds: selectionTimeout,
@@ -121,6 +124,28 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
                   className="w-full px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none"
                   placeholder="192.168.1.222"
                 />
+                <p className="text-xs text-settings-text-muted mt-2">
+                  Local network IP address of your matrix switcher
+                </p>
+              </div>
+
+              {/* Proxy Tunnel URL */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2 text-settings-label">
+                  Remote Access URL (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={proxyTunnelUrl}
+                  onChange={(e) => setProxyTunnelUrl(e.target.value)}
+                  className="w-full px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none"
+                  placeholder="https://matrix.yourdomain.com"
+                />
+                <p className="text-xs text-settings-text-muted mt-2">
+                  <strong>For remote access:</strong> Set up a Cloudflare Tunnel on a Raspberry Pi to access your device from anywhere.<br />
+                  When configured, this URL overrides the local IP address.<br />
+                  Leave blank to use local IP only.
+                </p>
               </div>
 
               {/* Connection View */}

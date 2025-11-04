@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface MatrixControlProps {
   config: {
     deviceIp: string;
+    proxyTunnelUrl?: string;
     inputLabels: string[];
     outputLabels: string[];
     connectionView?: string;
@@ -106,7 +107,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
 
   // Attempt to reconnect to the device
   const attemptReconnection = useCallback(async () => {
-    const matrixClient = createMatrixClient(config.deviceIp);
+    const matrixClient = createMatrixClient(config.deviceIp, config.proxyTunnelUrl);
     try {
       const status = await matrixClient.getStatus();
       if (status.outputs.length > 0) {
@@ -137,7 +138,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
       return;
     }
 
-    const matrixClient = createMatrixClient(config.deviceIp);
+    const matrixClient = createMatrixClient(config.deviceIp, config.proxyTunnelUrl);
 
     const pollStatus = async () => {
       try {
@@ -208,7 +209,7 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
 
         console.log(`Routing Input ${inputNum} to outputs: ${allOutputs.join(', ')}`);
 
-        const matrixClient = createMatrixClient(config.deviceIp);
+        const matrixClient = createMatrixClient(config.deviceIp, config.proxyTunnelUrl);
         await matrixClient.switchInputToOutputs(inputNum, allOutputs);
 
         // Optimistic update

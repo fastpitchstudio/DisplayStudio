@@ -1,0 +1,13 @@
+# Cloudflare Tunnel Configuration for Display Studio Proxy
+# This file will be automatically configured during setup
+
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /home/pi/.cloudflared/YOUR_TUNNEL_ID.json
+
+ingress:
+  # Route all traffic to the local proxy server
+  - hostname: YOUR_TUNNEL_HOSTNAME
+    service: http://localhost:3001
+
+  # Catch-all rule (required)
+  - service: http_status:404

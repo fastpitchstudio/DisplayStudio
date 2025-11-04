@@ -6,12 +6,14 @@ export interface MatrixStatus {
 
 export class MatrixApiClient {
   private baseUrl: string;
+  private proxyTunnelUrl: string | undefined;
   private username = 'admin';
   private password = 'admin';
   private useDirectConnection = false;
 
-  constructor(deviceIp: string) {
+  constructor(deviceIp: string, proxyTunnelUrl?: string) {
     this.baseUrl = `http://${deviceIp}`;
+    this.proxyTunnelUrl = proxyTunnelUrl;
     // Try to detect if we can use direct connection (same origin or CORS allowed)
     this.detectConnectionMode();
   }
@@ -79,6 +81,11 @@ export class MatrixApiClient {
   }
 
   private async sendCommand(command: Record<string, unknown>): Promise<any> {
+    // If proxy tunnel URL is configured, use it directly (bypasses local network)
+    if (this.proxyTunnelUrl) {
+      return this.sendViaTunnel(command);
+    }
+
     // On production (Vercel), use direct browser→device connection
     if (this.useDirectConnection) {
       return this.sendDirectCommand(command);
@@ -110,6 +117,35 @@ export class MatrixApiClient {
       // Catch network errors (fetch failed, timeout, etc.) and return silently
       return {
         error: error instanceof Error ? error.message : 'Network error - device unreachable',
+        success: false
+      };
+    }
+  }
+
+  private async sendViaTunnel(command: Record<string, unknown>): Promise<any> {
+    try {
+      console.log('✓ Using Cloudflare Tunnel:', this.proxyTunnelUrl);
+
+      const response = await fetch(`${this.proxyTunnelUrl}/matrix`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command }),
+      });
+
+      const data = await response.json();
+
+      // Check if the response contains an error field
+      if (data.error) {
+        return { error: data.error, success: false };
+      }
+
+      // Extract the actual data from the proxy response
+      return data.data || data;
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Tunnel connection failed',
         success: false
       };
     }
@@ -198,6 +234,6 @@ export class MatrixApiClient {
 }
 
 // Helper to create client instance
-export function createMatrixClient(deviceIp: string): MatrixApiClient {
-  return new MatrixApiClient(deviceIp);
+export function createMatrixClient(deviceIp: string, proxyTunnelUrl?: string): MatrixApiClient {
+  return new MatrixApiClient(deviceIp, proxyTunnelUrl);
 }
