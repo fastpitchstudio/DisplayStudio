@@ -11,6 +11,8 @@ interface SettingsPanelProps {
     proxyTunnelUrl?: string;
     inputLabels: string[];
     outputLabels: string[];
+    inputColors: string[];
+    outputColors: string[];
     selectionTimeoutSeconds?: number;
     connectionView?: string;
     themeMode?: string;
@@ -31,12 +33,81 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
   const [themeMode, setThemeMode] = useState(config.themeMode || 'system');
   const [themeName, setThemeName] = useState(config.themeName || 'vercel');
 
+  const [inputColors, setInputColors] = useState(config.inputColors);
+  const [outputColors, setOutputColors] = useState(config.outputColors);
+
+  // Helper function to convert HSL to hex for color input
+  const hslToHex = (hsl: string): string => {
+    // Parse HSL string: hsl(h, s%, l%)
+    const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+    if (!match) return '#888888'; // Fallback for invalid format
+
+    const h = parseInt(match[1]) / 360;
+    const s = parseInt(match[2]) / 100;
+    const l = parseInt(match[3]) / 100;
+
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l; // achromatic
+    } else {
+      const hue2rgb = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+
+    const toHex = (x: number) => {
+      const hex = Math.round(x * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
+  // Helper function to convert hex to HSL
+  const hexToHsl = (hex: string): string => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return hex;
+
+    const r = parseInt(result[1], 16) / 255;
+    const g = parseInt(result[2], 16) / 255;
+    const b = parseInt(result[3], 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+
+    return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+  };
+
   const handleSave = () => {
     onUpdateConfig({
       deviceIp,
       proxyTunnelUrl,
       inputLabels,
       outputLabels,
+      inputColors,
+      outputColors,
       selectionTimeoutSeconds: selectionTimeout,
       connectionView,
       themeMode,
@@ -55,6 +126,20 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
     const newLabels = [...outputLabels];
     newLabels[index] = value;
     setOutputLabels(newLabels);
+  };
+
+  const updateInputColor = (index: number, value: string) => {
+    const newColors = [...inputColors];
+    // Convert hex to HSL if it's a hex color from the color picker
+    newColors[index] = value.startsWith('#') ? hexToHsl(value) : value;
+    setInputColors(newColors);
+  };
+
+  const updateOutputColor = (index: number, value: string) => {
+    const newColors = [...outputColors];
+    // Convert hex to HSL if it's a hex color from the color picker
+    newColors[index] = value.startsWith('#') ? hexToHsl(value) : value;
+    setOutputColors(newColors);
   };
 
   return (
@@ -158,11 +243,13 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
                   onChange={(e) => setConnectionView(e.target.value)}
                   className="w-full px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none text-foreground"
                 >
+                  <option value="simple">Simple</option>
                   <option value="both">Sources and Displays</option>
                   <option value="input">Sources</option>
                   <option value="output">Displays</option>
                 </select>
                 <p className="text-xs text-settings-text-muted mt-2">
+                  <strong>Simple:</strong> Clean layout with large labels and minimal distractions<br />
                   <strong>Sources and Displays:</strong> Show both side-by-side with drag-and-drop<br />
                   <strong>Sources:</strong> Show only sources with display toggles<br />
                   <strong>Displays:</strong> Show only displays with source selection
@@ -214,6 +301,11 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
               {/* Input Labels */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-3 text-settings-label">Input Labels</h3>
+                {connectionView === 'simple' && (
+                  <p className="text-xs text-settings-text-muted mb-3">
+                    Click color button to customize source colors (outputs will use the source color when connected)
+                  </p>
+                )}
                 <div className="space-y-2">
                   {inputLabels.map((label, index) => (
                     <div key={`input-label-${index}`} className="flex items-center gap-2">
@@ -224,6 +316,15 @@ export function SettingsPanel({ isOpen, onClose, config, onUpdateConfig, showDeb
                         onChange={(e) => updateInputLabel(index, e.target.value)}
                         className="flex-1 px-3 py-2 bg-ui-input-bg rounded-lg border border-ui-input-border focus:border-settings-button-primary focus:outline-none text-sm"
                       />
+                      {connectionView === 'simple' && (
+                        <input
+                          type="color"
+                          value={hslToHex(inputColors[index])}
+                          onChange={(e) => updateInputColor(index, e.target.value)}
+                          className="w-10 h-10 rounded-lg cursor-pointer shrink-0 border-0 p-0 overflow-hidden"
+                          title={`Source color for ${label}`}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

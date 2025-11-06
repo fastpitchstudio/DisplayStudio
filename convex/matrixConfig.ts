@@ -141,3 +141,29 @@ export const updateProxyTunnelUrl = mutation({
     await ctx.db.patch(config._id, { proxyTunnelUrl: cleanUrl || undefined, updatedAt: Date.now() });
   },
 });
+
+// Update input color
+export const updateInputColor = mutation({
+  args: { inputNum: v.number(), color: v.string() },
+  handler: async (ctx, { inputNum, color }) => {
+    const config = await ctx.db.query('matrixConfig').first();
+    if (!config) {
+      throw new Error('Configuration not initialized');
+    }
+    const field = `input${inputNum}Color` as keyof typeof config;
+    await ctx.db.patch(config._id, { [field]: color, updatedAt: Date.now() });
+  },
+});
+
+// Update output color
+export const updateOutputColor = mutation({
+  args: { outputNum: v.number(), color: v.string() },
+  handler: async (ctx, { outputNum, color }) => {
+    const config = await ctx.db.query('matrixConfig').first();
+    if (!config) {
+      throw new Error('Configuration not initialized');
+    }
+    const field = `output${outputNum}Color` as keyof typeof config;
+    await ctx.db.patch(config._id, { [field]: color, updatedAt: Date.now() });
+  },
+});

@@ -6,6 +6,7 @@ import { SettingsPanel } from './SettingsPanel';
 import { DebugPanel } from './DebugPanel';
 import { InputGroupedView } from './InputGroupedView';
 import { OutputGroupedView } from './OutputGroupedView';
+import { SimpleView } from './SimpleView';
 import { createMatrixClient, MatrixStatus } from '@/lib/matrixApi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -15,6 +16,8 @@ interface MatrixControlProps {
     proxyTunnelUrl?: string;
     inputLabels: string[];
     outputLabels: string[];
+    inputColors: string[];
+    outputColors: string[];
     connectionView?: string;
     themeMode?: string;
     themeName?: string;
@@ -503,6 +506,24 @@ export function MatrixControl({ config, onUpdateConfig }: MatrixControlProps) {
         className="flex-1 flex flex-row gap-3 min-h-0 max-w-6xl mx-auto w-full relative pb-2 [@media(max-height:768px)]:gap-2 [@media(max-height:768px)]:pb-1 [@media(max-height:600px)]:gap-1.5"
         onClick={(e) => e.stopPropagation()}
       >
+        {connectionView === 'simple' && (
+          <SimpleView
+            inputLabels={config.inputLabels}
+            outputLabels={config.outputLabels}
+            inputColors={config.inputColors}
+            matrixStatus={matrixStatus}
+            onSwitch={handleSwitch}
+            selectedInput={selectedInput}
+            selectedOutput={selectedOutput}
+            highlightedInput={highlightedInput}
+            highlightedOutputs={highlightedOutputs}
+            onInputSelect={handleInputSelect}
+            onOutputSelect={handleOutputSelect}
+            onDrag={handleDrag}
+            onDrop={handleDrop}
+          />
+        )}
+
         {connectionView === 'input' && (
           <InputGroupedView
             inputLabels={config.inputLabels}

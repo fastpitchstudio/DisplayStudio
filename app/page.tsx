@@ -17,6 +17,8 @@ export default function Home() {
   const updateThemeMode = useMutation(api.matrixConfig.updateThemeMode);
   const updateThemeName = useMutation(api.matrixConfig.updateThemeName);
   const updateProxyTunnelUrl = useMutation(api.matrixConfig.updateProxyTunnelUrl);
+  const updateInputColor = useMutation(api.matrixConfig.updateInputColor);
+  const updateOutputColor = useMutation(api.matrixConfig.updateOutputColor);
 
   const { setMode, setThemeName } = useTheme(config?.themeMode, config?.themeName);
 
@@ -48,6 +50,8 @@ export default function Home() {
     proxyTunnelUrl?: string;
     inputLabels?: string[];
     outputLabels?: string[];
+    inputColors?: string[];
+    outputColors?: string[];
     selectionTimeoutSeconds?: number;
     connectionView?: string;
     themeMode?: string;
@@ -105,6 +109,26 @@ export default function Home() {
         await updateThemeName({ name: updates.themeName });
         setThemeName(updates.themeName as 'vercel' | 'tangerine' | 'claymorphism' | 'midnight-bloom' | 'fastpitch');
       }
+
+      // Update input colors if changed
+      if (updates.inputColors) {
+        for (let i = 0; i < updates.inputColors.length; i++) {
+          const oldColor = config[`input${i + 1}Color` as keyof typeof config];
+          if (updates.inputColors[i] !== oldColor) {
+            await updateInputColor({ inputNum: i + 1, color: updates.inputColors[i] });
+          }
+        }
+      }
+
+      // Update output colors if changed
+      if (updates.outputColors) {
+        for (let i = 0; i < updates.outputColors.length; i++) {
+          const oldColor = config[`output${i + 1}Color` as keyof typeof config];
+          if (updates.outputColors[i] !== oldColor) {
+            await updateOutputColor({ outputNum: i + 1, color: updates.outputColors[i] });
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to update config:', error);
     }
@@ -132,6 +156,40 @@ export default function Home() {
     config.output8Label,
   ];
 
+  // Default muted color palette
+  const defaultColors = [
+    'hsl(210, 40%, 55%)', // Muted blue
+    'hsl(150, 35%, 50%)', // Muted green
+    'hsl(30, 45%, 55%)',  // Muted orange
+    'hsl(270, 35%, 55%)', // Muted purple
+    'hsl(340, 40%, 55%)', // Muted rose
+    'hsl(180, 35%, 50%)', // Muted teal
+    'hsl(45, 50%, 55%)',  // Muted yellow
+    'hsl(0, 35%, 55%)',   // Muted red
+  ];
+
+  const inputColors = [
+    config.input1Color || defaultColors[0],
+    config.input2Color || defaultColors[1],
+    config.input3Color || defaultColors[2],
+    config.input4Color || defaultColors[3],
+    config.input5Color || defaultColors[4],
+    config.input6Color || defaultColors[5],
+    config.input7Color || defaultColors[6],
+    config.input8Color || defaultColors[7],
+  ];
+
+  const outputColors = [
+    config.output1Color || defaultColors[0],
+    config.output2Color || defaultColors[1],
+    config.output3Color || defaultColors[2],
+    config.output4Color || defaultColors[3],
+    config.output5Color || defaultColors[4],
+    config.output6Color || defaultColors[5],
+    config.output7Color || defaultColors[6],
+    config.output8Color || defaultColors[7],
+  ];
+
   return (
     <MatrixControl
       config={{
@@ -139,6 +197,8 @@ export default function Home() {
         proxyTunnelUrl: config.proxyTunnelUrl,
         inputLabels,
         outputLabels,
+        inputColors,
+        outputColors,
         connectionView: config.connectionView,
         themeMode: config.themeMode,
         themeName: config.themeName,

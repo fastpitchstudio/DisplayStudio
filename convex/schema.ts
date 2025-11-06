@@ -46,6 +46,26 @@ export default defineSchema({
     // Format: "https://your-tunnel.example.com"
     proxyTunnelUrl: v.optional(v.string()),
 
+    // Input colors for simple view (HSL format, 8 colors)
+    input1Color: v.optional(v.string()),
+    input2Color: v.optional(v.string()),
+    input3Color: v.optional(v.string()),
+    input4Color: v.optional(v.string()),
+    input5Color: v.optional(v.string()),
+    input6Color: v.optional(v.string()),
+    input7Color: v.optional(v.string()),
+    input8Color: v.optional(v.string()),
+
+    // Output colors for simple view (HSL format, 8 colors)
+    output1Color: v.optional(v.string()),
+    output2Color: v.optional(v.string()),
+    output3Color: v.optional(v.string()),
+    output4Color: v.optional(v.string()),
+    output5Color: v.optional(v.string()),
+    output6Color: v.optional(v.string()),
+    output7Color: v.optional(v.string()),
+    output8Color: v.optional(v.string()),
+
     // Metadata
     updatedAt: v.number(),
   }),
